@@ -1,0 +1,138 @@
+// Compiled shader for PC, Mac & Linux Standalone, uncompressed size: 4.0KB
+
+Shader "Futile/VoxelSimple" {
+Properties {
+ _MainTex ("Base (RGB) Trans (A)", 2D) = "white" {}
+}
+SubShader { 
+ Tags { "QUEUE"="Transparent" "IGNOREPROJECTOR"="true" "RenderType"="Transparent" }
+
+
+ // Stats for Vertex shader:
+ //       d3d11 : 4 math
+ //        d3d9 : 5 math
+ //      opengl : 5 math
+ // Stats for Fragment shader:
+ //       d3d11 : 0 math, 1 texture
+ //        d3d9 : 3 math, 1 texture
+ //      opengl : 3 math, 1 texture
+ Pass {
+  Tags { "QUEUE"="Transparent" "IGNOREPROJECTOR"="true" "RenderType"="Transparent" }
+  BindChannels {
+   Bind "vertex", Vertex
+   Bind "color", Color
+   Bind "texcoord", TexCoord
+  }
+  ZWrite Off
+  Cull Off
+Program "vp" {
+SubProgram "opengl " {
+// Stats: 5 math
+Bind "vertex" Vertex
+Bind "texcoord" TexCoord0
+"3.0-!!ARBvp1.0
+PARAM c[5] = { program.local[0],
+		state.matrix.mvp };
+MOV result.texcoord[0].xy, vertex.texcoord[0];
+DP4 result.position.w, vertex.position, c[4];
+DP4 result.position.z, vertex.position, c[3];
+DP4 result.position.y, vertex.position, c[2];
+DP4 result.position.x, vertex.position, c[1];
+END
+# 5 instructions, 0 R-regs
+"
+}
+SubProgram "d3d9 " {
+// Stats: 5 math
+Bind "vertex" Vertex
+Bind "texcoord" TexCoord0
+Matrix 0 [glstate_matrix_mvp]
+"vs_3_0
+dcl_position o0
+dcl_texcoord0 o1
+dcl_position0 v0
+dcl_texcoord0 v1
+mov o1.xy, v1
+dp4 o0.w, v0, c3
+dp4 o0.z, v0, c2
+dp4 o0.y, v0, c1
+dp4 o0.x, v0, c0
+"
+}
+SubProgram "d3d11 " {
+// Stats: 4 math
+Bind "vertex" Vertex
+Bind "color" Color
+Bind "texcoord" TexCoord0
+ConstBuffer "UnityPerDraw" 336
+Matrix 0 [glstate_matrix_mvp]
+BindCB  "UnityPerDraw" 0
+"vs_4_0
+eefiecedakbdegmnbblecoioidkiihdbkiholkmlabaaaaaafiacaaaaadaaaaaa
+cmaaaaaapeaaaaaaemabaaaaejfdeheomaaaaaaaagaaaaaaaiaaaaaajiaaaaaa
+aaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaapapaaaakbaaaaaaaaaaaaaaaaaaaaaa
+adaaaaaaabaaaaaaapaaaaaakjaaaaaaaaaaaaaaaaaaaaaaadaaaaaaacaaaaaa
+ahaaaaaalaaaaaaaaaaaaaaaaaaaaaaaadaaaaaaadaaaaaaapadaaaalaaaaaaa
+abaaaaaaaaaaaaaaadaaaaaaaeaaaaaaapaaaaaaljaaaaaaaaaaaaaaaaaaaaaa
+adaaaaaaafaaaaaaapaaaaaafaepfdejfeejepeoaafeebeoehefeofeaaeoepfc
+enebemaafeeffiedepepfceeaaedepemepfcaaklepfdeheofaaaaaaaacaaaaaa
+aiaaaaaadiaaaaaaaaaaaaaaabaaaaaaadaaaaaaaaaaaaaaapaaaaaaeeaaaaaa
+aaaaaaaaaaaaaaaaadaaaaaaabaaaaaaadamaaaafdfgfpfaepfdejfeejepeoaa
+feeffiedepepfceeaaklklklfdeieefcaeabaaaaeaaaabaaebaaaaaafjaaaaae
+egiocaaaaaaaaaaaaeaaaaaafpaaaaadpcbabaaaaaaaaaaafpaaaaaddcbabaaa
+adaaaaaaghaaaaaepccabaaaaaaaaaaaabaaaaaagfaaaaaddccabaaaabaaaaaa
+giaaaaacabaaaaaadiaaaaaipcaabaaaaaaaaaaafgbfbaaaaaaaaaaaegiocaaa
+aaaaaaaaabaaaaaadcaaaaakpcaabaaaaaaaaaaaegiocaaaaaaaaaaaaaaaaaaa
+agbabaaaaaaaaaaaegaobaaaaaaaaaaadcaaaaakpcaabaaaaaaaaaaaegiocaaa
+aaaaaaaaacaaaaaakgbkbaaaaaaaaaaaegaobaaaaaaaaaaadcaaaaakpccabaaa
+aaaaaaaaegiocaaaaaaaaaaaadaaaaaapgbpbaaaaaaaaaaaegaobaaaaaaaaaaa
+dgaaaaafdccabaaaabaaaaaaegbabaaaadaaaaaadoaaaaab"
+}
+}
+Program "fp" {
+SubProgram "opengl " {
+// Stats: 3 math, 1 textures
+SetTexture 0 [_VoxelLevel] 3D 0
+"3.0-!!ARBfp1.0
+PARAM c[1] = { { 0.5 } };
+TEMP R0;
+MOV R0.z, c[0].x;
+MOV R0.xy, fragment.texcoord[0];
+TEX result.color, R0, texture[0], 3D;
+END
+# 3 instructions, 1 R-regs
+"
+}
+SubProgram "d3d9 " {
+// Stats: 3 math, 1 textures
+SetTexture 0 [_VoxelLevel] 3D 0
+"ps_3_0
+dcl_volume s0
+def c0, 0.50000000, 0, 0, 0
+dcl_texcoord0 v0.xy
+mov r0.z, c0.x
+mov r0.xy, v0
+texld r0, r0, s0
+mov_pp oC0, r0
+"
+}
+SubProgram "d3d11 " {
+// Stats: 0 math, 1 textures
+SetTexture 0 [_VoxelLevel] 3D 0
+"ps_4_0
+eefiecedbfflcdhgamgecfpmfiehlccmplkblpgpabaaaaaafeabaaaaadaaaaaa
+cmaaaaaaieaaaaaaliaaaaaaejfdeheofaaaaaaaacaaaaaaaiaaaaaadiaaaaaa
+aaaaaaaaabaaaaaaadaaaaaaaaaaaaaaapaaaaaaeeaaaaaaaaaaaaaaaaaaaaaa
+adaaaaaaabaaaaaaadadaaaafdfgfpfaepfdejfeejepeoaafeeffiedepepfcee
+aaklklklepfdeheocmaaaaaaabaaaaaaaiaaaaaacaaaaaaaaaaaaaaaaaaaaaaa
+adaaaaaaaaaaaaaaapaaaaaafdfgfpfegbhcghgfheaaklklfdeieefcjeaaaaaa
+eaaaaaaacfaaaaaafkaaaaadaagabaaaaaaaaaaaficiaaaeaahabaaaaaaaaaaa
+ffffaaaagcbaaaaddcbabaaaabaaaaaagfaaaaadpccabaaaaaaaaaaagiaaaaac
+abaaaaaadgaaaaafdcaabaaaaaaaaaaaegbabaaaabaaaaaadgaaaaafecaabaaa
+aaaaaaaaabeaaaaaaaaaaadpefaaaaajpccabaaaaaaaaaaaegacbaaaaaaaaaaa
+eghobaaaaaaaaaaaaagabaaaaaaaaaaadoaaaaab"
+}
+}
+ }
+}
+}

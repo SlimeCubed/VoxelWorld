@@ -1,0 +1,1324 @@
+// Compiled shader for all platforms, uncompressed size: 34.0KB
+
+Shader "Futile/VoxelLevelColor" {
+Properties {
+ _MainTex ("Base (RGB) Trans (A)", 3D) = "white" {}
+}
+SubShader { 
+ Tags { "QUEUE"="Transparent" "IGNOREPROJECTOR"="true" "RenderType"="Transparent" }
+
+
+ // Stats for Vertex shader:
+ //       d3d11 : 8 math
+ //        d3d9 : 9 math
+ //       gles3 : 38 math, 1 texture, 5 branch
+ //       metal : 2 math
+ //      opengl : 38 math, 1 texture, 5 branch
+ // Stats for Fragment shader:
+ //       d3d11 : 22 math, 1 texture, 1 branch
+ //        d3d9 : 66 math, 1 texture, 5 branch
+ //       metal : 38 math, 1 texture, 5 branch
+ Pass {
+  Tags { "QUEUE"="Transparent" "IGNOREPROJECTOR"="true" "RenderType"="Transparent" }
+  BindChannels {
+   Bind "vertex", Vertex
+   Bind "color", Color
+   Bind "texcoord", TexCoord
+  }
+  ZWrite Off
+  Cull Off
+  Blend SrcAlpha OneMinusSrcAlpha
+Program "vp" {
+SubProgram "opengl " {
+// Stats: 38 math, 1 textures, 5 branches
+"!!GLSL
+#ifdef VERTEX
+
+
+varying vec2 xlv_TEXCOORD0;
+varying vec4 xlv_TEXCOORD1;
+void main ()
+{
+  gl_Position = (gl_ModelViewProjectionMatrix * gl_Vertex);
+  xlv_TEXCOORD0 = gl_MultiTexCoord0.xy;
+  xlv_TEXCOORD1 = (gl_ModelViewMatrix * gl_Vertex);
+}
+
+
+#endif
+#ifdef FRAGMENT
+uniform vec4 _ScreenParams;
+uniform sampler3D _MainTex;
+uniform float _RAIN;
+varying vec2 xlv_TEXCOORD0;
+varying vec4 xlv_TEXCOORD1;
+void main ()
+{
+  vec2 tmpvar_1;
+  tmpvar_1 = xlv_TEXCOORD0;
+  vec4 col_3;
+  vec2 offset_4;
+  vec2 tmpvar_5;
+  float cse_6;
+  cse_6 = (_RAIN * 25.0);
+  tmpvar_5.x = cos(cse_6);
+  tmpvar_5.y = sin(cse_6);
+  offset_4 = (vec2(0.00976565, 0.00976565) * ((
+    (xlv_TEXCOORD1.xy / xlv_TEXCOORD1.w)
+   + 
+    (80.0 * tmpvar_5)
+  ) / _ScreenParams.xy));
+  col_3 = vec4(0.0, 0.0, 0.0, 0.0);
+  for (int z_2 = 29; z_2 >= 0; z_2 = (z_2 - 1)) {
+    vec4 voxCol_7;
+    vec3 tmpvar_8;
+    tmpvar_8.xy = (tmpvar_1 + (offset_4 * float(
+      (z_2 - 5)
+    )));
+    tmpvar_8.z = (float(z_2) / 32.0);
+    int tmpvar_9;
+    tmpvar_9 = int((float(mod (float(
+      int((texture3D (_MainTex, tmpvar_8).w * 255.0))
+    ), 4.0))));
+    voxCol_7 = vec4(0.0, 0.0, 0.0, 0.0);
+    if ((tmpvar_9 == 0)) {
+      voxCol_7 = vec4(0.33, 0.33, 0.33, 1.0);
+    } else {
+      if ((tmpvar_9 == 1)) {
+        voxCol_7 = vec4(0.66, 0.66, 0.66, 1.0);
+      } else {
+        if ((tmpvar_9 == 2)) {
+          voxCol_7 = vec4(1.0, 1.0, 1.0, 1.0);
+        };
+      };
+    };
+    voxCol_7.xyz = (voxCol_7.xyz * (float(
+      (30 - z_2)
+    ) / 30.0));
+    col_3 = ((voxCol_7 * voxCol_7.w) + (col_3 * (1.0 - voxCol_7.w)));
+  };
+  gl_FragData[0] = col_3;
+}
+
+
+#endif
+"
+}
+SubProgram "d3d9 " {
+// Stats: 9 math
+Bind "vertex" Vertex
+Bind "texcoord" TexCoord0
+Matrix 0 [glstate_matrix_modelview0]
+Matrix 4 [glstate_matrix_mvp]
+"vs_3_0
+dcl_position o0
+dcl_texcoord0 o1
+dcl_texcoord1 o2
+dcl_position0 v0
+dcl_texcoord0 v1
+mov o1.xy, v1
+dp4 o0.w, v0, c7
+dp4 o0.z, v0, c6
+dp4 o0.y, v0, c5
+dp4 o0.x, v0, c4
+dp4 o2.w, v0, c3
+dp4 o2.z, v0, c2
+dp4 o2.y, v0, c1
+dp4 o2.x, v0, c0
+"
+}
+SubProgram "d3d11 " {
+// Stats: 8 math
+Bind "vertex" Vertex
+Bind "color" Color
+Bind "texcoord" TexCoord0
+ConstBuffer "UnityPerDraw" 336
+Matrix 0 [glstate_matrix_mvp]
+Matrix 64 [glstate_matrix_modelview0]
+BindCB  "UnityPerDraw" 0
+"vs_4_0
+eefiecednnmbhnbhniapoknefnjodphccmilhdndabaaaaaabeadaaaaadaaaaaa
+cmaaaaaapeaaaaaageabaaaaejfdeheomaaaaaaaagaaaaaaaiaaaaaajiaaaaaa
+aaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaapapaaaakbaaaaaaaaaaaaaaaaaaaaaa
+adaaaaaaabaaaaaaapaaaaaakjaaaaaaaaaaaaaaaaaaaaaaadaaaaaaacaaaaaa
+ahaaaaaalaaaaaaaaaaaaaaaaaaaaaaaadaaaaaaadaaaaaaapadaaaalaaaaaaa
+abaaaaaaaaaaaaaaadaaaaaaaeaaaaaaapaaaaaaljaaaaaaaaaaaaaaaaaaaaaa
+adaaaaaaafaaaaaaapaaaaaafaepfdejfeejepeoaafeebeoehefeofeaaeoepfc
+enebemaafeeffiedepepfceeaaedepemepfcaaklepfdeheogiaaaaaaadaaaaaa
+aiaaaaaafaaaaaaaaaaaaaaaabaaaaaaadaaaaaaaaaaaaaaapaaaaaafmaaaaaa
+aaaaaaaaaaaaaaaaadaaaaaaabaaaaaaadamaaaafmaaaaaaabaaaaaaaaaaaaaa
+adaaaaaaacaaaaaaapaaaaaafdfgfpfaepfdejfeejepeoaafeeffiedepepfcee
+aaklklklfdeieefckiabaaaaeaaaabaagkaaaaaafjaaaaaeegiocaaaaaaaaaaa
+aiaaaaaafpaaaaadpcbabaaaaaaaaaaafpaaaaaddcbabaaaadaaaaaaghaaaaae
+pccabaaaaaaaaaaaabaaaaaagfaaaaaddccabaaaabaaaaaagfaaaaadpccabaaa
+acaaaaaagiaaaaacabaaaaaadiaaaaaipcaabaaaaaaaaaaafgbfbaaaaaaaaaaa
+egiocaaaaaaaaaaaabaaaaaadcaaaaakpcaabaaaaaaaaaaaegiocaaaaaaaaaaa
+aaaaaaaaagbabaaaaaaaaaaaegaobaaaaaaaaaaadcaaaaakpcaabaaaaaaaaaaa
+egiocaaaaaaaaaaaacaaaaaakgbkbaaaaaaaaaaaegaobaaaaaaaaaaadcaaaaak
+pccabaaaaaaaaaaaegiocaaaaaaaaaaaadaaaaaapgbpbaaaaaaaaaaaegaobaaa
+aaaaaaaadgaaaaafdccabaaaabaaaaaaegbabaaaadaaaaaadiaaaaaipcaabaaa
+aaaaaaaafgbfbaaaaaaaaaaaegiocaaaaaaaaaaaafaaaaaadcaaaaakpcaabaaa
+aaaaaaaaegiocaaaaaaaaaaaaeaaaaaaagbabaaaaaaaaaaaegaobaaaaaaaaaaa
+dcaaaaakpcaabaaaaaaaaaaaegiocaaaaaaaaaaaagaaaaaakgbkbaaaaaaaaaaa
+egaobaaaaaaaaaaadcaaaaakpccabaaaacaaaaaaegiocaaaaaaaaaaaahaaaaaa
+pgbpbaaaaaaaaaaaegaobaaaaaaaaaaadoaaaaab"
+}
+SubProgram "gles " {
+"!!GLES
+
+
+#ifdef VERTEX
+
+#ifndef SHADER_API_GLES
+    #define SHADER_API_GLES 1
+#endif
+#ifndef SHADER_API_MOBILE
+    #define SHADER_API_MOBILE 1
+#endif
+#define gl_Vertex _glesVertex
+attribute vec4 _glesVertex;
+#define gl_Color _glesColor
+attribute vec4 _glesColor;
+#define gl_Normal (normalize(_glesNormal))
+attribute vec3 _glesNormal;
+#define gl_MultiTexCoord0 _glesMultiTexCoord0
+attribute vec4 _glesMultiTexCoord0;
+#define gl_MultiTexCoord1 _glesMultiTexCoord1
+attribute vec4 _glesMultiTexCoord1;
+#define TANGENT vec4(normalize(_glesTANGENT.xyz), _glesTANGENT.w)
+attribute vec4 _glesTANGENT;
+
+#line 221
+struct v2f_vertex_lit {
+    highp vec2 uv;
+    lowp vec4 diff;
+    lowp vec4 spec;
+};
+#line 275
+struct v2f_img {
+    highp vec4 pos;
+    mediump vec2 uv;
+};
+#line 271
+struct appdata_img {
+    highp vec4 vertex;
+    mediump vec2 texcoord;
+};
+#line 45
+struct v2f {
+    highp vec4 pos;
+    highp vec2 uv;
+    highp vec4 viewPos;
+};
+#line 73
+struct appdata_full {
+    highp vec4 vertex;
+    highp vec4 tangent;
+    highp vec3 normal;
+    highp vec4 texcoord;
+    highp vec4 texcoord1;
+    lowp vec4 color;
+};
+#line 16
+uniform highp vec4 _Time;
+uniform highp vec4 _SinTime;
+uniform highp vec4 _CosTime;
+uniform highp vec4 unity_DeltaTime;
+#line 21
+uniform highp vec3 _WorldSpaceCameraPos;
+#line 27
+uniform highp vec4 _ProjectionParams;
+#line 33
+uniform highp vec4 _ScreenParams;
+uniform highp vec4 _ZBufferParams;
+#line 40
+uniform highp vec4 unity_CameraWorldClipPlanes[6];
+#line 53
+uniform highp vec4 _WorldSpaceLightPos0;
+uniform highp vec4 _LightPositionRange;
+#line 58
+uniform highp vec4 unity_4LightPosX0;
+uniform highp vec4 unity_4LightPosY0;
+uniform highp vec4 unity_4LightPosZ0;
+uniform highp vec4 unity_4LightAtten0;
+#line 63
+uniform highp vec4 unity_LightColor[8];
+uniform highp vec4 unity_LightPosition[8];
+#line 69
+uniform highp vec4 unity_LightAtten[8];
+uniform highp vec4 unity_SpotDirection[8];
+#line 73
+uniform highp vec4 unity_SHAr;
+uniform highp vec4 unity_SHAg;
+uniform highp vec4 unity_SHAb;
+uniform highp vec4 unity_SHBr;
+#line 77
+uniform highp vec4 unity_SHBg;
+uniform highp vec4 unity_SHBb;
+uniform highp vec4 unity_SHC;
+#line 83
+uniform highp vec3 unity_LightColor0;
+uniform highp vec3 unity_LightColor1;
+uniform highp vec3 unity_LightColor2;
+uniform highp vec3 unity_LightColor3;
+#line 90
+uniform highp vec4 unity_ShadowSplitSpheres[4];
+uniform highp vec4 unity_ShadowSplitSqRadii;
+uniform highp vec4 unity_LightShadowBias;
+uniform highp vec4 _LightSplitsNear;
+#line 94
+uniform highp vec4 _LightSplitsFar;
+uniform highp mat4 unity_World2Shadow[4];
+uniform highp vec4 _LightShadowData;
+uniform highp vec4 unity_ShadowFadeCenterAndType;
+#line 110
+uniform highp mat4 glstate_matrix_mvp;
+uniform highp mat4 glstate_matrix_modelview0;
+uniform highp mat4 glstate_matrix_invtrans_modelview0;
+#line 122
+uniform highp mat4 _Object2World;
+uniform highp mat4 _World2Object;
+uniform highp vec4 unity_Scale;
+#line 133
+uniform highp mat4 glstate_matrix_transpose_modelview0;
+#line 149
+uniform highp mat4 glstate_matrix_texture0;
+uniform highp mat4 glstate_matrix_texture1;
+uniform highp mat4 glstate_matrix_texture2;
+uniform highp mat4 glstate_matrix_texture3;
+#line 173
+uniform highp mat4 glstate_matrix_projection;
+uniform highp vec4 glstate_lightmodel_ambient;
+#line 182
+uniform highp mat4 unity_MatrixV;
+uniform highp mat4 unity_MatrixVP;
+#line 48
+uniform lowp vec4 unity_ColorSpaceGrey;
+#line 89
+#line 104
+#line 119
+#line 125
+#line 143
+#line 175
+#line 192
+#line 227
+#line 238
+#line 248
+#line 256
+#line 280
+#line 286
+#line 296
+#line 305
+#line 312
+#line 321
+#line 329
+#line 338
+#line 357
+#line 363
+#line 376
+#line 387
+#line 392
+#line 418
+#line 434
+#line 447
+#line 40
+uniform lowp sampler3D _MainTex;
+uniform highp vec4 _MainTex_ST;
+uniform highp float _RAIN;
+#line 52
+#line 62
+#line 52
+v2f vert( in appdata_full v ) {
+    v2f o;
+    o.pos = (glstate_matrix_mvp * v.vertex);
+    #line 56
+    o.viewPos = (glstate_matrix_modelview0 * v.vertex);
+    o.uv = vec2( v.texcoord);
+    return o;
+}
+
+varying highp vec2 xlv_TEXCOORD0;
+varying highp vec4 xlv_TEXCOORD1;
+void main() {
+    v2f xl_retval;
+    appdata_full xlt_v;
+    xlt_v.vertex = vec4(gl_Vertex);
+    xlt_v.tangent = vec4(TANGENT);
+    xlt_v.normal = vec3(gl_Normal);
+    xlt_v.texcoord = vec4(gl_MultiTexCoord0);
+    xlt_v.texcoord1 = vec4(gl_MultiTexCoord1);
+    xlt_v.color = vec4(gl_Color);
+    xl_retval = vert( xlt_v);
+    gl_Position = vec4(xl_retval.pos);
+    xlv_TEXCOORD0 = vec2(xl_retval.uv);
+    xlv_TEXCOORD1 = vec4(xl_retval.viewPos);
+}
+/* NOTE: GLSL optimization failed
+(41,32): error: invalid type `sampler3D' in declaration of `_MainTex'
+*/
+
+
+#endif
+#ifdef FRAGMENT
+
+#ifndef SHADER_API_GLES
+    #define SHADER_API_GLES 1
+#endif
+#ifndef SHADER_API_MOBILE
+    #define SHADER_API_MOBILE 1
+#endif
+
+#line 221
+struct v2f_vertex_lit {
+    highp vec2 uv;
+    lowp vec4 diff;
+    lowp vec4 spec;
+};
+#line 275
+struct v2f_img {
+    highp vec4 pos;
+    mediump vec2 uv;
+};
+#line 271
+struct appdata_img {
+    highp vec4 vertex;
+    mediump vec2 texcoord;
+};
+#line 45
+struct v2f {
+    highp vec4 pos;
+    highp vec2 uv;
+    highp vec4 viewPos;
+};
+#line 73
+struct appdata_full {
+    highp vec4 vertex;
+    highp vec4 tangent;
+    highp vec3 normal;
+    highp vec4 texcoord;
+    highp vec4 texcoord1;
+    lowp vec4 color;
+};
+#line 16
+uniform highp vec4 _Time;
+uniform highp vec4 _SinTime;
+uniform highp vec4 _CosTime;
+uniform highp vec4 unity_DeltaTime;
+#line 21
+uniform highp vec3 _WorldSpaceCameraPos;
+#line 27
+uniform highp vec4 _ProjectionParams;
+#line 33
+uniform highp vec4 _ScreenParams;
+uniform highp vec4 _ZBufferParams;
+#line 40
+uniform highp vec4 unity_CameraWorldClipPlanes[6];
+#line 53
+uniform highp vec4 _WorldSpaceLightPos0;
+uniform highp vec4 _LightPositionRange;
+#line 58
+uniform highp vec4 unity_4LightPosX0;
+uniform highp vec4 unity_4LightPosY0;
+uniform highp vec4 unity_4LightPosZ0;
+uniform highp vec4 unity_4LightAtten0;
+#line 63
+uniform highp vec4 unity_LightColor[8];
+uniform highp vec4 unity_LightPosition[8];
+#line 69
+uniform highp vec4 unity_LightAtten[8];
+uniform highp vec4 unity_SpotDirection[8];
+#line 73
+uniform highp vec4 unity_SHAr;
+uniform highp vec4 unity_SHAg;
+uniform highp vec4 unity_SHAb;
+uniform highp vec4 unity_SHBr;
+#line 77
+uniform highp vec4 unity_SHBg;
+uniform highp vec4 unity_SHBb;
+uniform highp vec4 unity_SHC;
+#line 83
+uniform highp vec3 unity_LightColor0;
+uniform highp vec3 unity_LightColor1;
+uniform highp vec3 unity_LightColor2;
+uniform highp vec3 unity_LightColor3;
+#line 90
+uniform highp vec4 unity_ShadowSplitSpheres[4];
+uniform highp vec4 unity_ShadowSplitSqRadii;
+uniform highp vec4 unity_LightShadowBias;
+uniform highp vec4 _LightSplitsNear;
+#line 94
+uniform highp vec4 _LightSplitsFar;
+uniform highp mat4 unity_World2Shadow[4];
+uniform highp vec4 _LightShadowData;
+uniform highp vec4 unity_ShadowFadeCenterAndType;
+#line 110
+uniform highp mat4 glstate_matrix_mvp;
+uniform highp mat4 glstate_matrix_modelview0;
+uniform highp mat4 glstate_matrix_invtrans_modelview0;
+#line 122
+uniform highp mat4 _Object2World;
+uniform highp mat4 _World2Object;
+uniform highp vec4 unity_Scale;
+#line 133
+uniform highp mat4 glstate_matrix_transpose_modelview0;
+#line 149
+uniform highp mat4 glstate_matrix_texture0;
+uniform highp mat4 glstate_matrix_texture1;
+uniform highp mat4 glstate_matrix_texture2;
+uniform highp mat4 glstate_matrix_texture3;
+#line 173
+uniform highp mat4 glstate_matrix_projection;
+uniform highp vec4 glstate_lightmodel_ambient;
+#line 182
+uniform highp mat4 unity_MatrixV;
+uniform highp mat4 unity_MatrixVP;
+#line 48
+uniform lowp vec4 unity_ColorSpaceGrey;
+#line 89
+#line 104
+#line 119
+#line 125
+#line 143
+#line 175
+#line 192
+#line 227
+#line 238
+#line 248
+#line 256
+#line 280
+#line 286
+#line 296
+#line 305
+#line 312
+#line 321
+#line 329
+#line 338
+#line 357
+#line 363
+#line 376
+#line 387
+#line 392
+#line 418
+#line 434
+#line 447
+#line 40
+uniform lowp sampler3D _MainTex;
+uniform highp vec4 _MainTex_ST;
+uniform highp float _RAIN;
+#line 52
+#line 62
+#line 62
+mediump vec4 frag( in v2f i ) {
+    highp vec2 viewPos = (((i.viewPos.xy / i.viewPos.w) + (80.0 * vec2( cos((_RAIN * 25.0)), sin((_RAIN * 25.0))))) / _ScreenParams.xy);
+    highp vec2 offset = (vec2( (viewPos.x * 5.0), (viewPos.y * 5.0)) * vec2( 0.00195313, 0.00195313));
+    #line 67
+    mediump vec4 col = vec4( 0.0, 0.0, 0.0, 0.0);
+    highp int z = 29;
+    for ( ; (z >= 0); (z--)) {
+        highp float a = texture3D( _MainTex, vec3( (i.uv.xy + (offset * float((z - 5)))), (float(z) / 32.0))).w;
+        #line 71
+        highp int voxel = int((a * 255.0));
+        highp int pal = int(mod(float(voxel), 4.0));
+        #line 75
+        mediump vec4 voxCol = vec4( 0.0, 0.0, 0.0, 0.0);
+        if ((pal == 0)){
+            voxCol = vec4( 0.33, 0.33, 0.33, 1.0);
+        }
+        else{
+            if ((pal == 1)){
+                voxCol = vec4( 0.66, 0.66, 0.66, 1.0);
+            }
+            else{
+                if ((pal == 2)){
+                    voxCol = vec4( 1.0, 1.0, 1.0, 1.0);
+                }
+            }
+        }
+        #line 80
+        voxCol.xyz *= (float((30 - z)) / 30.0);
+        col = ((voxCol * voxCol.w) + (col * (1.0 - voxCol.w)));
+    }
+    #line 84
+    return col;
+}
+varying highp vec2 xlv_TEXCOORD0;
+varying highp vec4 xlv_TEXCOORD1;
+void main() {
+    mediump vec4 xl_retval;
+    v2f xlt_i;
+    xlt_i.pos = vec4(0.0);
+    xlt_i.uv = vec2(xlv_TEXCOORD0);
+    xlt_i.viewPos = vec4(xlv_TEXCOORD1);
+    xl_retval = frag( xlt_i);
+    gl_FragData[0] = vec4(xl_retval);
+}
+/* NOTE: GLSL optimization failed
+(41,32): error: invalid type `sampler3D' in declaration of `_MainTex'
+(71,37): error: `_MainTex' undeclared
+(71,102): error: no matching function for call to `texture3D(error, vec3)'; candidates are:
+(71,105): error: type mismatch
+*/
+
+
+#endif"
+}
+SubProgram "glesdesktop " {
+"!!GLES
+
+
+#ifdef VERTEX
+
+#ifndef SHADER_API_GLES
+    #define SHADER_API_GLES 1
+#endif
+#ifndef SHADER_API_DESKTOP
+    #define SHADER_API_DESKTOP 1
+#endif
+#define gl_Vertex _glesVertex
+attribute vec4 _glesVertex;
+#define gl_Color _glesColor
+attribute vec4 _glesColor;
+#define gl_Normal (normalize(_glesNormal))
+attribute vec3 _glesNormal;
+#define gl_MultiTexCoord0 _glesMultiTexCoord0
+attribute vec4 _glesMultiTexCoord0;
+#define gl_MultiTexCoord1 _glesMultiTexCoord1
+attribute vec4 _glesMultiTexCoord1;
+#define TANGENT vec4(normalize(_glesTANGENT.xyz), _glesTANGENT.w)
+attribute vec4 _glesTANGENT;
+
+#line 221
+struct v2f_vertex_lit {
+    highp vec2 uv;
+    lowp vec4 diff;
+    lowp vec4 spec;
+};
+#line 275
+struct v2f_img {
+    highp vec4 pos;
+    mediump vec2 uv;
+};
+#line 271
+struct appdata_img {
+    highp vec4 vertex;
+    mediump vec2 texcoord;
+};
+#line 45
+struct v2f {
+    highp vec4 pos;
+    highp vec2 uv;
+    highp vec4 viewPos;
+};
+#line 73
+struct appdata_full {
+    highp vec4 vertex;
+    highp vec4 tangent;
+    highp vec3 normal;
+    highp vec4 texcoord;
+    highp vec4 texcoord1;
+    lowp vec4 color;
+};
+#line 16
+uniform highp vec4 _Time;
+uniform highp vec4 _SinTime;
+uniform highp vec4 _CosTime;
+uniform highp vec4 unity_DeltaTime;
+#line 21
+uniform highp vec3 _WorldSpaceCameraPos;
+#line 27
+uniform highp vec4 _ProjectionParams;
+#line 33
+uniform highp vec4 _ScreenParams;
+uniform highp vec4 _ZBufferParams;
+#line 40
+uniform highp vec4 unity_CameraWorldClipPlanes[6];
+#line 53
+uniform highp vec4 _WorldSpaceLightPos0;
+uniform highp vec4 _LightPositionRange;
+#line 58
+uniform highp vec4 unity_4LightPosX0;
+uniform highp vec4 unity_4LightPosY0;
+uniform highp vec4 unity_4LightPosZ0;
+uniform highp vec4 unity_4LightAtten0;
+#line 63
+uniform highp vec4 unity_LightColor[8];
+uniform highp vec4 unity_LightPosition[8];
+#line 69
+uniform highp vec4 unity_LightAtten[8];
+uniform highp vec4 unity_SpotDirection[8];
+#line 73
+uniform highp vec4 unity_SHAr;
+uniform highp vec4 unity_SHAg;
+uniform highp vec4 unity_SHAb;
+uniform highp vec4 unity_SHBr;
+#line 77
+uniform highp vec4 unity_SHBg;
+uniform highp vec4 unity_SHBb;
+uniform highp vec4 unity_SHC;
+#line 83
+uniform highp vec3 unity_LightColor0;
+uniform highp vec3 unity_LightColor1;
+uniform highp vec3 unity_LightColor2;
+uniform highp vec3 unity_LightColor3;
+#line 90
+uniform highp vec4 unity_ShadowSplitSpheres[4];
+uniform highp vec4 unity_ShadowSplitSqRadii;
+uniform highp vec4 unity_LightShadowBias;
+uniform highp vec4 _LightSplitsNear;
+#line 94
+uniform highp vec4 _LightSplitsFar;
+uniform highp mat4 unity_World2Shadow[4];
+uniform highp vec4 _LightShadowData;
+uniform highp vec4 unity_ShadowFadeCenterAndType;
+#line 110
+uniform highp mat4 glstate_matrix_mvp;
+uniform highp mat4 glstate_matrix_modelview0;
+uniform highp mat4 glstate_matrix_invtrans_modelview0;
+#line 122
+uniform highp mat4 _Object2World;
+uniform highp mat4 _World2Object;
+uniform highp vec4 unity_Scale;
+#line 133
+uniform highp mat4 glstate_matrix_transpose_modelview0;
+#line 149
+uniform highp mat4 glstate_matrix_texture0;
+uniform highp mat4 glstate_matrix_texture1;
+uniform highp mat4 glstate_matrix_texture2;
+uniform highp mat4 glstate_matrix_texture3;
+#line 173
+uniform highp mat4 glstate_matrix_projection;
+uniform highp vec4 glstate_lightmodel_ambient;
+#line 182
+uniform highp mat4 unity_MatrixV;
+uniform highp mat4 unity_MatrixVP;
+#line 48
+uniform lowp vec4 unity_ColorSpaceGrey;
+#line 89
+#line 104
+#line 119
+#line 125
+#line 143
+#line 175
+#line 192
+#line 227
+#line 238
+#line 248
+#line 256
+#line 280
+#line 286
+#line 296
+#line 305
+#line 312
+#line 321
+#line 329
+#line 338
+#line 357
+#line 363
+#line 376
+#line 387
+#line 392
+#line 418
+#line 434
+#line 447
+#line 40
+uniform lowp sampler3D _MainTex;
+uniform highp vec4 _MainTex_ST;
+uniform highp float _RAIN;
+#line 52
+#line 62
+#line 52
+v2f vert( in appdata_full v ) {
+    v2f o;
+    o.pos = (glstate_matrix_mvp * v.vertex);
+    #line 56
+    o.viewPos = (glstate_matrix_modelview0 * v.vertex);
+    o.uv = vec2( v.texcoord);
+    return o;
+}
+
+varying highp vec2 xlv_TEXCOORD0;
+varying highp vec4 xlv_TEXCOORD1;
+void main() {
+    v2f xl_retval;
+    appdata_full xlt_v;
+    xlt_v.vertex = vec4(gl_Vertex);
+    xlt_v.tangent = vec4(TANGENT);
+    xlt_v.normal = vec3(gl_Normal);
+    xlt_v.texcoord = vec4(gl_MultiTexCoord0);
+    xlt_v.texcoord1 = vec4(gl_MultiTexCoord1);
+    xlt_v.color = vec4(gl_Color);
+    xl_retval = vert( xlt_v);
+    gl_Position = vec4(xl_retval.pos);
+    xlv_TEXCOORD0 = vec2(xl_retval.uv);
+    xlv_TEXCOORD1 = vec4(xl_retval.viewPos);
+}
+/* NOTE: GLSL optimization failed
+(41,32): error: invalid type `sampler3D' in declaration of `_MainTex'
+*/
+
+
+#endif
+#ifdef FRAGMENT
+
+#ifndef SHADER_API_GLES
+    #define SHADER_API_GLES 1
+#endif
+#ifndef SHADER_API_DESKTOP
+    #define SHADER_API_DESKTOP 1
+#endif
+
+#line 221
+struct v2f_vertex_lit {
+    highp vec2 uv;
+    lowp vec4 diff;
+    lowp vec4 spec;
+};
+#line 275
+struct v2f_img {
+    highp vec4 pos;
+    mediump vec2 uv;
+};
+#line 271
+struct appdata_img {
+    highp vec4 vertex;
+    mediump vec2 texcoord;
+};
+#line 45
+struct v2f {
+    highp vec4 pos;
+    highp vec2 uv;
+    highp vec4 viewPos;
+};
+#line 73
+struct appdata_full {
+    highp vec4 vertex;
+    highp vec4 tangent;
+    highp vec3 normal;
+    highp vec4 texcoord;
+    highp vec4 texcoord1;
+    lowp vec4 color;
+};
+#line 16
+uniform highp vec4 _Time;
+uniform highp vec4 _SinTime;
+uniform highp vec4 _CosTime;
+uniform highp vec4 unity_DeltaTime;
+#line 21
+uniform highp vec3 _WorldSpaceCameraPos;
+#line 27
+uniform highp vec4 _ProjectionParams;
+#line 33
+uniform highp vec4 _ScreenParams;
+uniform highp vec4 _ZBufferParams;
+#line 40
+uniform highp vec4 unity_CameraWorldClipPlanes[6];
+#line 53
+uniform highp vec4 _WorldSpaceLightPos0;
+uniform highp vec4 _LightPositionRange;
+#line 58
+uniform highp vec4 unity_4LightPosX0;
+uniform highp vec4 unity_4LightPosY0;
+uniform highp vec4 unity_4LightPosZ0;
+uniform highp vec4 unity_4LightAtten0;
+#line 63
+uniform highp vec4 unity_LightColor[8];
+uniform highp vec4 unity_LightPosition[8];
+#line 69
+uniform highp vec4 unity_LightAtten[8];
+uniform highp vec4 unity_SpotDirection[8];
+#line 73
+uniform highp vec4 unity_SHAr;
+uniform highp vec4 unity_SHAg;
+uniform highp vec4 unity_SHAb;
+uniform highp vec4 unity_SHBr;
+#line 77
+uniform highp vec4 unity_SHBg;
+uniform highp vec4 unity_SHBb;
+uniform highp vec4 unity_SHC;
+#line 83
+uniform highp vec3 unity_LightColor0;
+uniform highp vec3 unity_LightColor1;
+uniform highp vec3 unity_LightColor2;
+uniform highp vec3 unity_LightColor3;
+#line 90
+uniform highp vec4 unity_ShadowSplitSpheres[4];
+uniform highp vec4 unity_ShadowSplitSqRadii;
+uniform highp vec4 unity_LightShadowBias;
+uniform highp vec4 _LightSplitsNear;
+#line 94
+uniform highp vec4 _LightSplitsFar;
+uniform highp mat4 unity_World2Shadow[4];
+uniform highp vec4 _LightShadowData;
+uniform highp vec4 unity_ShadowFadeCenterAndType;
+#line 110
+uniform highp mat4 glstate_matrix_mvp;
+uniform highp mat4 glstate_matrix_modelview0;
+uniform highp mat4 glstate_matrix_invtrans_modelview0;
+#line 122
+uniform highp mat4 _Object2World;
+uniform highp mat4 _World2Object;
+uniform highp vec4 unity_Scale;
+#line 133
+uniform highp mat4 glstate_matrix_transpose_modelview0;
+#line 149
+uniform highp mat4 glstate_matrix_texture0;
+uniform highp mat4 glstate_matrix_texture1;
+uniform highp mat4 glstate_matrix_texture2;
+uniform highp mat4 glstate_matrix_texture3;
+#line 173
+uniform highp mat4 glstate_matrix_projection;
+uniform highp vec4 glstate_lightmodel_ambient;
+#line 182
+uniform highp mat4 unity_MatrixV;
+uniform highp mat4 unity_MatrixVP;
+#line 48
+uniform lowp vec4 unity_ColorSpaceGrey;
+#line 89
+#line 104
+#line 119
+#line 125
+#line 143
+#line 175
+#line 192
+#line 227
+#line 238
+#line 248
+#line 256
+#line 280
+#line 286
+#line 296
+#line 305
+#line 312
+#line 321
+#line 329
+#line 338
+#line 357
+#line 363
+#line 376
+#line 387
+#line 392
+#line 418
+#line 434
+#line 447
+#line 40
+uniform lowp sampler3D _MainTex;
+uniform highp vec4 _MainTex_ST;
+uniform highp float _RAIN;
+#line 52
+#line 62
+#line 62
+mediump vec4 frag( in v2f i ) {
+    highp vec2 viewPos = (((i.viewPos.xy / i.viewPos.w) + (80.0 * vec2( cos((_RAIN * 25.0)), sin((_RAIN * 25.0))))) / _ScreenParams.xy);
+    highp vec2 offset = (vec2( (viewPos.x * 5.0), (viewPos.y * 5.0)) * vec2( 0.00195313, 0.00195313));
+    #line 67
+    mediump vec4 col = vec4( 0.0, 0.0, 0.0, 0.0);
+    highp int z = 29;
+    for ( ; (z >= 0); (z--)) {
+        highp float a = texture3D( _MainTex, vec3( (i.uv.xy + (offset * float((z - 5)))), (float(z) / 32.0))).w;
+        #line 71
+        highp int voxel = int((a * 255.0));
+        highp int pal = int(mod(float(voxel), 4.0));
+        #line 75
+        mediump vec4 voxCol = vec4( 0.0, 0.0, 0.0, 0.0);
+        if ((pal == 0)){
+            voxCol = vec4( 0.33, 0.33, 0.33, 1.0);
+        }
+        else{
+            if ((pal == 1)){
+                voxCol = vec4( 0.66, 0.66, 0.66, 1.0);
+            }
+            else{
+                if ((pal == 2)){
+                    voxCol = vec4( 1.0, 1.0, 1.0, 1.0);
+                }
+            }
+        }
+        #line 80
+        voxCol.xyz *= (float((30 - z)) / 30.0);
+        col = ((voxCol * voxCol.w) + (col * (1.0 - voxCol.w)));
+    }
+    #line 84
+    return col;
+}
+varying highp vec2 xlv_TEXCOORD0;
+varying highp vec4 xlv_TEXCOORD1;
+void main() {
+    mediump vec4 xl_retval;
+    v2f xlt_i;
+    xlt_i.pos = vec4(0.0);
+    xlt_i.uv = vec2(xlv_TEXCOORD0);
+    xlt_i.viewPos = vec4(xlv_TEXCOORD1);
+    xl_retval = frag( xlt_i);
+    gl_FragData[0] = vec4(xl_retval);
+}
+/* NOTE: GLSL optimization failed
+(41,32): error: invalid type `sampler3D' in declaration of `_MainTex'
+(71,37): error: `_MainTex' undeclared
+(71,102): error: no matching function for call to `texture3D(error, vec3)'; candidates are:
+(71,105): error: type mismatch
+*/
+
+
+#endif"
+}
+SubProgram "gles3 " {
+// Stats: 38 math, 1 textures, 5 branches
+"!!GLES3#version 300 es
+
+
+#ifdef VERTEX
+
+
+in vec4 _glesVertex;
+in vec4 _glesMultiTexCoord0;
+uniform highp mat4 glstate_matrix_mvp;
+uniform highp mat4 glstate_matrix_modelview0;
+out highp vec2 xlv_TEXCOORD0;
+out highp vec4 xlv_TEXCOORD1;
+void main ()
+{
+  gl_Position = (glstate_matrix_mvp * _glesVertex);
+  xlv_TEXCOORD0 = _glesMultiTexCoord0.xy;
+  xlv_TEXCOORD1 = (glstate_matrix_modelview0 * _glesVertex);
+}
+
+
+
+#endif
+#ifdef FRAGMENT
+
+
+layout(location=0) out mediump vec4 _glesFragData[4];
+uniform highp vec4 _ScreenParams;
+uniform lowp sampler3D _MainTex;
+uniform highp float _RAIN;
+in highp vec2 xlv_TEXCOORD0;
+in highp vec4 xlv_TEXCOORD1;
+void main ()
+{
+  highp vec2 tmpvar_1;
+  tmpvar_1 = xlv_TEXCOORD0;
+  mediump vec4 col_3;
+  highp vec2 offset_4;
+  highp vec2 tmpvar_5;
+  highp float cse_6;
+  cse_6 = (_RAIN * 25.0);
+  tmpvar_5.x = cos(cse_6);
+  tmpvar_5.y = sin(cse_6);
+  offset_4 = (vec2(0.00976565, 0.00976565) * ((
+    (xlv_TEXCOORD1.xy / xlv_TEXCOORD1.w)
+   + 
+    (80.0 * tmpvar_5)
+  ) / _ScreenParams.xy));
+  col_3 = vec4(0.0, 0.0, 0.0, 0.0);
+  for (int z_2 = 29; z_2 >= 0; z_2 = (z_2 - 1)) {
+    mediump vec4 voxCol_7;
+    highp float a_8;
+    highp vec3 tmpvar_9;
+    tmpvar_9.xy = (tmpvar_1 + (offset_4 * float(
+      (z_2 - 5)
+    )));
+    tmpvar_9.z = (float(z_2) / 32.0);
+    lowp float tmpvar_10;
+    tmpvar_10 = texture (_MainTex, tmpvar_9).w;
+    a_8 = tmpvar_10;
+    int tmpvar_11;
+    tmpvar_11 = int((float(mod (float(
+      int((a_8 * 255.0))
+    ), 4.0))));
+    voxCol_7 = vec4(0.0, 0.0, 0.0, 0.0);
+    if ((tmpvar_11 == 0)) {
+      voxCol_7 = vec4(0.33, 0.33, 0.33, 1.0);
+    } else {
+      if ((tmpvar_11 == 1)) {
+        voxCol_7 = vec4(0.66, 0.66, 0.66, 1.0);
+      } else {
+        if ((tmpvar_11 == 2)) {
+          voxCol_7 = vec4(1.0, 1.0, 1.0, 1.0);
+        };
+      };
+    };
+    highp vec3 tmpvar_12;
+    tmpvar_12 = (voxCol_7.xyz * (float(
+      (30 - z_2)
+    ) / 30.0));
+    voxCol_7.xyz = tmpvar_12;
+    col_3 = ((voxCol_7 * voxCol_7.w) + (col_3 * (1.0 - voxCol_7.w)));
+  };
+  _glesFragData[0] = col_3;
+}
+
+
+
+#endif"
+}
+SubProgram "metal " {
+// Stats: 2 math
+Bind "vertex" ATTR0
+Bind "texcoord" ATTR1
+ConstBuffer "$Globals" 128
+Matrix 0 [glstate_matrix_mvp]
+Matrix 64 [glstate_matrix_modelview0]
+"metal_vs
+#include <metal_stdlib>
+using namespace metal;
+struct xlatMtlShaderInput {
+  float4 _glesVertex [[attribute(0)]];
+  float4 _glesMultiTexCoord0 [[attribute(1)]];
+};
+struct xlatMtlShaderOutput {
+  float4 gl_Position [[position]];
+  float2 xlv_TEXCOORD0;
+  float4 xlv_TEXCOORD1;
+};
+struct xlatMtlShaderUniform {
+  float4x4 glstate_matrix_mvp;
+  float4x4 glstate_matrix_modelview0;
+};
+vertex xlatMtlShaderOutput xlatMtlMain (xlatMtlShaderInput _mtl_i [[stage_in]], constant xlatMtlShaderUniform& _mtl_u [[buffer(0)]])
+{
+  xlatMtlShaderOutput _mtl_o;
+  _mtl_o.gl_Position = (_mtl_u.glstate_matrix_mvp * _mtl_i._glesVertex);
+  _mtl_o.xlv_TEXCOORD0 = _mtl_i._glesMultiTexCoord0.xy;
+  _mtl_o.xlv_TEXCOORD1 = (_mtl_u.glstate_matrix_modelview0 * _mtl_i._glesVertex);
+  return _mtl_o;
+}
+
+"
+}
+}
+Program "fp" {
+SubProgram "opengl " {
+"!!GLSL"
+}
+SubProgram "d3d9 " {
+// Stats: 66 math, 1 textures, 5 branches
+Vector 0 [_ScreenParams]
+Float 1 [_RAIN]
+SetTexture 0 [_MainTex] 3D 0
+"ps_3_0
+dcl_volume s0
+def c2, 3.97887278, 0.50000000, 6.28318501, -3.14159298
+def c3, 80.00000000, 5.00000000, 0.00195313, 0.00000000
+def c4, 29.00000000, -5.00000000, 0.03125000, 255.00000000
+defi i0, 255, 0, 1, 0
+def c5, 0.25000000, 4.00000000, 1.00000000, 0.00000000
+def c6, -1.00000000, -2.00000000, 0.66015625, 1.00000000
+def c7, 0.33007813, 1.00000000, 0.00000000, 30.00000000
+def c8, 0.03333334, 0, 0, 0
+dcl_texcoord0 v0.xy
+dcl_texcoord1 v1.xyzw
+mov r0.x, c1
+mad r0.x, r0, c2, c2.y
+frc r0.x, r0
+mad r1.x, r0, c2.z, c2.w
+sincos r0.xy, r1.x
+mul r0.zw, r0.xyxy, c3.x
+rcp r0.x, v1.w
+mad r0.zw, v1.xyxy, r0.x, r0
+rcp r0.y, c0.y
+rcp r0.x, c0.x
+mul r0.xy, r0.zwzw, r0
+mul r0.xy, r0, c3.y
+mul r2.xy, r0, c3.z
+mov_pp r0, c3.w
+mov r3.x, c4
+loop aL, i0
+break_lt r3.x, c3.w
+add r1.x, r3, c4.y
+mad r1.xy, r2, r1.x, v0
+mul r1.z, r3.x, c4
+texld r1.w, r1, s0
+mul r1.x, r1.w, c4.w
+abs r1.y, r1.x
+frc r1.z, r1.y
+add r1.y, r1, -r1.z
+cmp r1.x, r1, r1.y, -r1.y
+mul r1.x, r1, c5
+frc r1.x, r1
+mul r1.x, r1, c5.y
+abs r1.y, r1.x
+add r1.y, r1, c2
+frc r1.z, r1.y
+add r1.y, r1, -r1.z
+cmp r1.x, r1, r1.y, -r1.y
+add r1.y, r1.x, c6.x
+abs r1.w, r1.y
+abs r1.y, r1.x
+add r1.z, r1.x, c6.y
+cmp r2.z, -r1.y, c5, c5.w
+cmp r1.w, -r1, c5.z, c5
+abs_pp r1.y, r1.w
+abs r1.z, r1
+abs_pp r2.z, r2
+cmp_pp r2.z, -r2, c5, c5.w
+cmp_pp r1.y, -r1, c5.z, c5.w
+mul_pp r1.y, r2.z, r1
+cmp r1.z, -r1, c5, c5.w
+mul_pp r1.z, r1.y, r1
+abs r1.x, r1
+mul_pp r1.w, r2.z, r1
+cmp_pp r1.xy, -r1.x, c7, c7.z
+cmp_pp r1.xy, -r1.w, r1, c6.zwzw
+add r1.w, -r3.x, c7
+cmp_pp r2.zw, -r1.z, r1.xyxy, c5.z
+mul r1.x, r1.w, c8
+add_pp r1.w, -r2, c5.z
+mul_pp r0, r0, r1.w
+mul_pp r1.xyz, r2.z, r1.x
+mov_pp r1.w, r2
+mad_pp r0, r1, r2.w, r0
+add r3.x, r3, c6
+endloop
+mov_pp oC0, r0
+"
+}
+SubProgram "d3d11 " {
+// Stats: 22 math, 1 textures, 1 branches
+SetTexture 0 [_MainTex] 3D 0
+ConstBuffer "$Globals" 48
+Float 32 [_RAIN]
+ConstBuffer "UnityPerCamera" 128
+Vector 96 [_ScreenParams]
+BindCB  "$Globals" 0
+BindCB  "UnityPerCamera" 1
+"ps_4_0
+eefiecedahimodcmgmenbpmilnhckdhhgnkfdegkabaaaaaakaafaaaaadaaaaaa
+cmaaaaaajmaaaaaanaaaaaaaejfdeheogiaaaaaaadaaaaaaaiaaaaaafaaaaaaa
+aaaaaaaaabaaaaaaadaaaaaaaaaaaaaaapaaaaaafmaaaaaaaaaaaaaaaaaaaaaa
+adaaaaaaabaaaaaaadadaaaafmaaaaaaabaaaaaaaaaaaaaaadaaaaaaacaaaaaa
+apalaaaafdfgfpfaepfdejfeejepeoaafeeffiedepepfceeaaklklklepfdeheo
+cmaaaaaaabaaaaaaaiaaaaaacaaaaaaaaaaaaaaaaaaaaaaaadaaaaaaaaaaaaaa
+apaaaaaafdfgfpfegbhcghgfheaaklklfdeieefcmiaeaaaaeaaaaaaadcabaaaa
+fjaaaaaeegiocaaaaaaaaaaaadaaaaaafjaaaaaeegiocaaaabaaaaaaahaaaaaa
+fkaaaaadaagabaaaaaaaaaaaficiaaaeaahabaaaaaaaaaaaffffaaaagcbaaaad
+dcbabaaaabaaaaaagcbaaaadlcbabaaaacaaaaaagfaaaaadpccabaaaaaaaaaaa
+giaaaaacaeaaaaaaaoaaaaahdcaabaaaaaaaaaaaegbabaaaacaaaaaapgbpbaaa
+acaaaaaadiaaaaaiecaabaaaaaaaaaaaakiacaaaaaaaaaaaacaaaaaaabeaaaaa
+aaaamiebenaaaaahbcaabaaaabaaaaaabcaabaaaacaaaaaackaabaaaaaaaaaaa
+dgaaaaafccaabaaaacaaaaaaakaabaaaabaaaaaadcaaaaamdcaabaaaaaaaaaaa
+egaabaaaacaaaaaaaceaaaaaaaaakaecaaaakaecaaaaaaaaaaaaaaaaegaabaaa
+aaaaaaaaaoaaaaaidcaabaaaaaaaaaaaegaabaaaaaaaaaaaegiacaaaabaaaaaa
+agaaaaaadiaaaaakdcaabaaaaaaaaaaaegaabaaaaaaaaaaaaceaaaaaaaaacadm
+aaaacadmaaaaaaaaaaaaaaaadgaaaaaipcaabaaaabaaaaaaaceaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaadgaaaaafecaabaaaaaaaaaaaabeaaaaabnaaaaaa
+daaaaaabccaaaaahicaabaaaaaaaaaaackaabaaaaaaaaaaaabeaaaaaaaaaaaaa
+adaaaeaddkaabaaaaaaaaaaaboaaaaakdcaabaaaacaaaaaakgakbaaaaaaaaaaa
+aceaaaaaplppppppppppppppaaaaaaaaaaaaaaaaclaaaaaficaabaaaaaaaaaaa
+akaabaaaacaaaaaadcaaaaajdcaabaaaadaaaaaaegaabaaaaaaaaaaapgapbaaa
+aaaaaaaaegbabaaaabaaaaaaclaaaaaficaabaaaaaaaaaaackaabaaaaaaaaaaa
+diaaaaahecaabaaaadaaaaaadkaabaaaaaaaaaaaabeaaaaaaaaaaadnefaaaaaj
+pcaabaaaadaaaaaaegacbaaaadaaaaaaeghobaaaaaaaaaaaaagabaaaaaaaaaaa
+diaaaaahicaabaaaaaaaaaaadkaabaaaadaaaaaaabeaaaaaaaaahpedblaaaaaf
+icaabaaaaaaaaaaadkaabaaaaaaaaaaaabaaaaahbcaabaaaacaaaaaadkaabaaa
+aaaaaaaaabeaaaaaaaaaaaiaceaaaaaiicaabaaaaaaaaaaadkaabaaaaaaaaaaa
+dkaabaiaebaaaaaaaaaaaaaaabaaaaahicaabaaaaaaaaaaadkaabaaaaaaaaaaa
+abeaaaaaadaaaaaaciaaaaafecaabaaaacaaaaaadkaabaaaaaaaaaaadhaaaaaj
+icaabaaaaaaaaaaaakaabaaaacaaaaaackaabaaaacaaaaaadkaabaaaaaaaaaaa
+caaaaaakfcaabaaaacaaaaaapgapbaaaaaaaaaaaaceaaaaaabaaaaaaaaaaaaaa
+acaaaaaaaaaaaaaaabaaaaahecaabaaaacaaaaaackaabaaaacaaaaaaabeaaaaa
+aaaaiadpdhaaaaamfcaabaaaacaaaaaaagaabaaaacaaaaaaaceaaaaamdpfcidp
+aaaaaaaaaaaaiadpaaaaaaaakgakbaaaacaaaaaadhaaaaamgcaabaaaadaaaaaa
+pgapbaaaaaaaaaaaagacbaaaacaaaaaaaceaaaaaaaaaaaaamdpfkidoaaaaiadp
+aaaaaaaaboaaaaaiicaabaaaaaaaaaaackaabaiaebaaaaaaaaaaaaaaabeaaaaa
+boaaaaaaclaaaaaficaabaaaaaaaaaaadkaabaaaaaaaaaaadiaaaaahicaabaaa
+aaaaaaaadkaabaaaaaaaaaaaabeaaaaaijiiaidndiaaaaahicaabaaaaaaaaaaa
+dkaabaaaaaaaaaaabkaabaaaadaaaaaadiaaaaahbcaabaaaadaaaaaackaabaaa
+adaaaaaadkaabaaaaaaaaaaaaaaaaaaiicaabaaaaaaaaaaackaabaiaebaaaaaa
+adaaaaaaabeaaaaaaaaaiadpdcaaaaajpcaabaaaabaaaaaaegaobaaaabaaaaaa
+pgapbaaaaaaaaaaaagaibaaaadaaaaaadgaaaaafecaabaaaaaaaaaaabkaabaaa
+acaaaaaabgaaaaabdgaaaaafpccabaaaaaaaaaaaegaobaaaabaaaaaadoaaaaab
+"
+}
+SubProgram "gles " {
+"!!GLES"
+}
+SubProgram "glesdesktop " {
+"!!GLES"
+}
+SubProgram "gles3 " {
+"!!GLES3"
+}
+SubProgram "metal " {
+// Stats: 38 math, 1 textures, 5 branches
+SetTexture 0 [_MainTex] 3D 0
+ConstBuffer "$Globals" 20
+Vector 0 [_ScreenParams]
+Float 16 [_RAIN]
+"metal_fs
+#include <metal_stdlib>
+using namespace metal;
+struct xlatMtlShaderInput {
+  float2 xlv_TEXCOORD0;
+  float4 xlv_TEXCOORD1;
+};
+struct xlatMtlShaderOutput {
+  half4 _glesFragData_0 [[color(0)]];
+};
+struct xlatMtlShaderUniform {
+  float4 _ScreenParams;
+  float _RAIN;
+};
+fragment xlatMtlShaderOutput xlatMtlMain (xlatMtlShaderInput _mtl_i [[stage_in]], constant xlatMtlShaderUniform& _mtl_u [[buffer(0)]]
+  ,   texture3d<half> _MainTex [[texture(0)]], sampler _mtlsmp__MainTex [[sampler(0)]])
+{
+  xlatMtlShaderOutput _mtl_o;
+  float2 tmpvar_1;
+  tmpvar_1 = _mtl_i.xlv_TEXCOORD0;
+  half4 col_3;
+  float2 offset_4;
+  float2 tmpvar_5;
+  float cse_6;
+  cse_6 = (_mtl_u._RAIN * 25.0);
+  tmpvar_5.x = cos(cse_6);
+  tmpvar_5.y = sin(cse_6);
+  offset_4 = (float2(0.00976565, 0.00976565) * ((
+    (_mtl_i.xlv_TEXCOORD1.xy / _mtl_i.xlv_TEXCOORD1.w)
+   + 
+    (80.0 * tmpvar_5)
+  ) / _mtl_u._ScreenParams.xy));
+  col_3 = half4(float4(0.0, 0.0, 0.0, 0.0));
+  for (int z_2 = 29; z_2 >= 0; z_2 = (z_2 - 1)) {
+    half4 voxCol_7;
+    float a_8;
+    float3 tmpvar_9;
+    tmpvar_9.xy = (tmpvar_1 + (offset_4 * float(
+      (z_2 - 5)
+    )));
+    tmpvar_9.z = (float(z_2) / 32.0);
+    half tmpvar_10;
+    tmpvar_10 = _MainTex.sample(_mtlsmp__MainTex, (float3)(tmpvar_9)).w;
+    a_8 = float(tmpvar_10);
+    int tmpvar_11;
+    tmpvar_11 = int((float(fmod (float(
+      int((a_8 * 255.0))
+    ), 4.0))));
+    voxCol_7 = half4(float4(0.0, 0.0, 0.0, 0.0));
+    if ((tmpvar_11 == 0)) {
+      voxCol_7 = half4(float4(0.33, 0.33, 0.33, 1.0));
+    } else {
+      if ((tmpvar_11 == 1)) {
+        voxCol_7 = half4(float4(0.66, 0.66, 0.66, 1.0));
+      } else {
+        if ((tmpvar_11 == 2)) {
+          voxCol_7 = half4(float4(1.0, 1.0, 1.0, 1.0));
+        };
+      };
+    };
+    float3 tmpvar_12;
+    tmpvar_12 = ((float3)voxCol_7.xyz * (float(
+      (30 - z_2)
+    ) / 30.0));
+    voxCol_7.xyz = half3(tmpvar_12);
+    col_3 = ((voxCol_7 * voxCol_7.w) + (col_3 * ((half)1.0 - voxCol_7.w)));
+  };
+  _mtl_o._glesFragData_0 = col_3;
+  return _mtl_o;
+}
+
+"
+}
+}
+ }
+}
+}
