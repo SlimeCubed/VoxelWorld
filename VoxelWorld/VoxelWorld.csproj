@@ -67,11 +67,23 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CameraScroll.cs" />
+    <Compile Include="CustomAtlases.cs" />
+    <Compile Include="Diag.cs" />
+    <Compile Include="FVoxelChunkNode.cs" />
+    <Compile Include="IntVector3.cs" />
+    <Compile Include="Preferences.cs" />
+    <Compile Include="Profiler.cs" />
+    <Compile Include="Rendering.cs" />
+    <Compile Include="ShaderFixes.cs" />
     <Compile Include="Shaders.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Shaders.resx</DependentUpon>
     </Compile>
+    <Compile Include="TextureManager.cs" />
+    <Compile Include="VoxelMap.cs" />
+    <Compile Include="VoxelMapView.cs" />
     <Compile Include="VoxelWorld.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VoxelWorldExt.cs" />
@@ -83,10 +95,26 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Atlases\Sprites.json" />
     <None Include="Resources\VoxelSimple.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\VoxelLevelColor.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\VoxelChunk.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Decal.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\LevelColor.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Fog.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Atlases\Sprites.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

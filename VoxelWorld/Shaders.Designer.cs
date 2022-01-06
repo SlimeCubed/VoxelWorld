@@ -61,9 +61,9 @@ namespace VoxelWorld {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to // Compiled shader for PC, Mac &amp; Linux Standalone, uncompressed size: 4.0KB
+        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 15.0KB
         ///
-        ///Shader &quot;Futile/VoxelLevelColor&quot; {
+        ///Shader &quot;Futile/Decal&quot; {
         ///Properties {
         /// _MainTex (&quot;Base (RGB) Trans (A)&quot;, 2D) = &quot;white&quot; {}
         ///}
@@ -72,13 +72,124 @@ namespace VoxelWorld {
         ///
         ///
         /// // Stats for Vertex shader:
-        /// //       d3d11 : 4 math
-        /// //        d3d9 : 5 math
-        /// //      opengl : 5 math
+        /// //       d3d11 : 9 math
         /// // Stats for Fragment shader:
-        /// //       d3d11 : 0 math, 1 texture
-        /// //        d3d9 : 3 math, 1 texture
-        /// //      opengl : 3 math, 1  [rest of string was truncated]&quot;;.
+        /// //       d3d11 : 135 math, 11 texture, 9 branch
+        /// Pass {
+        ///  Tags { &quot;QUEUE&quot;=&quot;Transparent&quot; &quot;IGNOREPROJECTOR&quot;=&quot;true&quot; &quot;RenderType&quot;=&quot;Transparent&quot; }
+        ///  BindChannels {
+        ///   Bind &quot;vert [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string Decal {
+            get {
+                return ResourceManager.GetString("Decal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 8.6KB
+        ///
+        ///Shader &quot;Futile/Fog&quot; {
+        ///Properties {
+        /// _MainTex (&quot;Base (RGB) Trans (A)&quot;, 2D) = &quot;white&quot; {}
+        ///}
+        ///SubShader { 
+        /// Tags { &quot;QUEUE&quot;=&quot;Transparent&quot; &quot;IGNOREPROJECTOR&quot;=&quot;true&quot; &quot;RenderType&quot;=&quot;Transparent&quot; }
+        ///
+        ///
+        /// // Stats for Vertex shader:
+        /// //       d3d11 : 9 math
+        /// // Stats for Fragment shader:
+        /// //       d3d11 : 60 math, 6 texture, 4 branch
+        /// Pass {
+        ///  Tags { &quot;QUEUE&quot;=&quot;Transparent&quot; &quot;IGNOREPROJECTOR&quot;=&quot;true&quot; &quot;RenderType&quot;=&quot;Transparent&quot; }
+        ///  BindChannels {
+        ///  [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string Fog {
+            get {
+                return ResourceManager.GetString("Fog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 16.1KB
+        ///
+        ///Shader &quot;Futile/LevelColor&quot; {
+        ///Properties {
+        /// _MainTex (&quot;Base (RGB) Trans (A)&quot;, 2D) = &quot;white&quot; {}
+        ///}
+        ///SubShader { 
+        /// Tags { &quot;QUEUE&quot;=&quot;Transparent&quot; &quot;IGNOREPROJECTOR&quot;=&quot;true&quot; &quot;RenderType&quot;=&quot;Transparent&quot; }
+        /// GrabPass {
+        /// }
+        ///
+        ///
+        /// // Stats for Vertex shader:
+        /// //       d3d11 : 5 math
+        /// // Stats for Fragment shader:
+        /// //       d3d11 : 150 math, 18 texture, 9 branch
+        /// Pass {
+        ///  Tags { &quot;QUEUE&quot;=&quot;Transparent&quot; &quot;IGNOREPROJECTOR&quot;=&quot;true&quot; &quot;RenderType&quot;=&quot;Transparent&quot; }
+        ///  BindChan [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string LevelColor {
+            get {
+                return ResourceManager.GetString("LevelColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 7.0KB
+        ///
+        ///Shader &quot;Futile/VoxelChunk&quot; {
+        ///Properties {
+        /// _MainTex (&quot;Voxels&quot;, 3D) = &quot;white&quot; {}
+        ///}
+        ///SubShader { 
+        /// LOD 100
+        /// Tags { &quot;QUEUE&quot;=&quot;Geometry&quot; &quot;RenderType&quot;=&quot;Opaque&quot; }
+        ///
+        ///
+        /// // Stats for Vertex shader:
+        /// //       d3d11 : 17 math
+        /// // Stats for Fragment shader:
+        /// //       d3d11 : 39 math, 3 branch
+        /// Pass {
+        ///  Tags { &quot;QUEUE&quot;=&quot;Geometry&quot; &quot;RenderType&quot;=&quot;Opaque&quot; }
+        ///  ZTest Less
+        ///Program &quot;vp&quot; {
+        ///SubProgram &quot;d3d11 &quot; {
+        ///// Stats: 17 math
+        ///Bind &quot;vertex&quot; Vertex
+        ///Bind &quot;color&quot; Color
+        ///C [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string VoxelChunk {
+            get {
+                return ResourceManager.GetString("VoxelChunk", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 34.0KB
+        ///
+        ///Shader &quot;Futile/VoxelLevelColor&quot; {
+        ///Properties {
+        /// _MainTex (&quot;Base (RGB) Trans (A)&quot;, 3D) = &quot;white&quot; {}
+        ///}
+        ///SubShader { 
+        /// Tags { &quot;QUEUE&quot;=&quot;Transparent&quot; &quot;IGNOREPROJECTOR&quot;=&quot;true&quot; &quot;RenderType&quot;=&quot;Transparent&quot; }
+        ///
+        ///
+        /// // Stats for Vertex shader:
+        /// //       d3d11 : 8 math
+        /// //        d3d9 : 9 math
+        /// //       gles3 : 38 math, 1 texture, 5 branch
+        /// //       metal : 2 math
+        /// //      opengl : 38 math, 1 texture, 5 branch
+        /// // Stats for Fragment shader:
+        /// //       d3d11 :  [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string VoxelLevelColor {
             get {
