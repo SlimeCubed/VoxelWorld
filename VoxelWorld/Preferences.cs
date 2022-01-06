@@ -23,6 +23,7 @@ namespace VoxelWorld
         public static float forceLoadDistanceFactor = 0.5f;
         public static float unloadDelay = 3f;
         public static bool allowLowQuality = true;
+        public static bool forceLoadOnScreenTransition = true;
 
         // Camera
         public static ScrollingMode scrollMode = ScrollingMode.BacktrackRectangle;
@@ -43,7 +44,6 @@ namespace VoxelWorld
         public enum ScrollingMode
         {
             Static,
-            CenteredRectangle,
             BacktrackRectangle
         }
 

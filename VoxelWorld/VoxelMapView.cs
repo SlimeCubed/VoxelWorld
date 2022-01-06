@@ -15,6 +15,7 @@ namespace VoxelWorld
 
         private readonly VoxelMap map;
         private readonly VoxelChunk[,] chunks;
+        private int forceLoadTimer;
 
         public VoxelMapView(VoxelMap map)
         {
@@ -30,6 +31,11 @@ namespace VoxelWorld
                     chunks[x, y] = new VoxelChunk(map, x, y);
                 }
             }
+        }
+
+        public void ForceLoad()
+        {
+            forceLoadTimer = Math.Max(forceLoadTimer, 10);
         }
 
         public void AddToContainer(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, FContainer newContainer)
@@ -52,6 +58,9 @@ namespace VoxelWorld
 
             var shouldLoadQuality = Preferences.onlyLowQuality ? VoxelChunk.TextureQuality.Low : VoxelChunk.TextureQuality.High;
             var mustLoadQuality = (Preferences.allowLowQuality || Preferences.onlyLowQuality) ? VoxelChunk.TextureQuality.Low : VoxelChunk.TextureQuality.High;
+
+            if (forceLoadTimer > 0)
+                mustLoadQuality = shouldLoadQuality;
 
             // Find chunks that should be loaded
             for (int chunkY = 0; chunkY < height; chunkY++)
@@ -150,6 +159,9 @@ namespace VoxelWorld
                 foreach (var chunk in chunks)
                     chunk.Update();
             }
+
+            if (forceLoadTimer > 0)
+                forceLoadTimer--;
         }
 
         public void InitiateSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)

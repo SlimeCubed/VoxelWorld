@@ -31,6 +31,17 @@ namespace VoxelWorld
                 var c = new ILCursor(il);
                 ILLabel skipClamp = c.DefineLabel();
 
+                // Update to match the controller's position
+                c.Emit(OpCodes.Ldarg_0);
+                c.EmitDelegate<Action<RoomCamera>>(cam =>
+                {
+                    if(controllers.TryGetValue(cam, out var controller) && controller.Active)
+                    {
+                        cam.lastPos = controller.DrawPos(0f);
+                        cam.pos = controller.DrawPos(1f);
+                    }
+                });
+
                 // Remove camera clamping
                 c.GotoNext(MoveType.After,
                         x => x.MatchLdfld<RoomCamera>(nameof(RoomCamera.voidSeaMode)),
@@ -101,21 +112,27 @@ namespace VoxelWorld
             // Replace the camera's position with the scrolling position
             On.RoomCamera.Update += (orig, self) =>
             {
-                orig(self);
                 if (controllers.TryGetValue(self, out var controller) && controller.Active)
                 {
                     controller.Update();
+                    self.pos = controller.DrawPos(0f);
+                    orig(self);
+                    self.lastPos = controller.DrawPos(0f);
                     self.pos = controller.DrawPos(1f);
+                }
+                else
+                {
+                    orig(self);
                 }
             };
 
             // Forward ChangeRoom to the scroll controller
             On.RoomCamera.ChangeRoom += (orig, self, newRoom, cameraPosition) =>
             {
+                orig(self, newRoom, cameraPosition);
+
                 if (controllers.TryGetValue(self, out var controller))
                     controller.NewRoom(newRoom, cameraPosition);
-
-                orig(self, newRoom, cameraPosition);
             };
 
             // Change depth logic to apply from the center of the camera
@@ -212,10 +229,6 @@ namespace VoxelWorld
                 switch(Preferences.scrollMode)
                 {
                     default:
-                    case Preferences.ScrollingMode.CenteredRectangle:
-                        positioner = new CenteredRectPositioner(this);
-                        break;
-
                     case Preferences.ScrollingMode.BacktrackRectangle:
                         positioner = new BacktrackRectPositioner(this);
                         break;
@@ -242,6 +255,14 @@ namespace VoxelWorld
                 lastPos = pos;
                 snap = true;
                 positioner.Reset();
+                Update();
+
+                if (Preferences.forceLoadOnScreenTransition)
+                {
+                    var voxelView = (VoxelMapView)room.updateList.FirstOrDefault(o => o is VoxelMapView);
+                    if (voxelView != null)
+                        voxelView.ForceLoad();
+                }
             }
 
             public Vector2 DrawPos(float timeStacker)
@@ -396,18 +417,6 @@ namespace VoxelWorld
                 public abstract void UpdatePosition(ref Vector2 lastPos, Vector2 target);
 
                 public virtual void Reset() { }
-            }
-
-            // Keep the target inside of a rectangle centered on the screen
-            private class CenteredRectPositioner : CameraPositioner
-            {
-                public CenteredRectPositioner(CameraController owner) : base(owner) { }
-
-                public override void UpdatePosition(ref Vector2 pos, Vector2 target)
-                {
-                    var trackRect = new Rect(pos.x - Preferences.trackRectWidth / 2f, pos.y - Preferences.trackRectWidth / 2f, Preferences.trackRectWidth, Preferences.trackRectHeight);
-                    pos += target - trackRect.GetClosestInteriorPoint(target);
-                }
             }
 
             // Keep the target inside of a rectangle behind the target
