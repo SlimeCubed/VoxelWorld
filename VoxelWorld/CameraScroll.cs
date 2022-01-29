@@ -175,6 +175,38 @@ namespace VoxelWorld
                 else
                     orig(self);
             };
+
+            // Change graphics module culling to move with the camera
+            On.RoomCamera.PositionCurrentlyVisible += (orig, self, testPos, margin, widescreen) =>
+            {
+                bool visible = orig(self, testPos, margin, widescreen);
+                if (controllers.TryGetValue(self, out var controller) && controller.Active)
+                {
+                    Rect camRect = new Rect(self.pos.x, self.pos.y, Futile.screen.width, Futile.screen.height);
+                    camRect = camRect.CloneWithExpansion(margin);
+                    if(widescreen)
+                    {
+                        camRect.xMin -= 190f;
+                        camRect.xMax += 190f;
+                    }
+
+                    if (camRect.Contains(testPos))
+                        visible = true;
+                }
+                return visible;
+            };
+
+            // Change graphics module culling to move with the camera
+            On.RoomCamera.PositionVisibleInNextScreen += (orig, self, testPos, margin, widescreen) =>
+            {
+                bool visible = orig(self, testPos, margin, widescreen);
+                if (controllers.TryGetValue(self, out var controller) && controller.Active)
+                {
+                    if (self.PositionCurrentlyVisible(testPos, margin + 800f, widescreen))
+                        visible = true;
+                }
+                return visible;
+            };
         }
 
         private class CameraController

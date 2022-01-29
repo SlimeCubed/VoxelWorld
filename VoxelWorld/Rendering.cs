@@ -17,6 +17,46 @@ namespace VoxelWorld
             On.Futile.Init += Futile_Init;
             On.RoomCamera.DrawUpdate += RoomCamera_DrawUpdate;
             On.ShortcutGraphics.GenerateSprites += ShortcutGraphics_GenerateSprites;
+            On.RoomCamera.DepthAtCoordinate += RoomCamera_DepthAtCoordinate;
+            On.RoomCamera.PixelColorAtCoordinate += RoomCamera_PixelColorAtCoordinate;
+        }
+
+        private static Color RoomCamera_PixelColorAtCoordinate(On.RoomCamera.orig_PixelColorAtCoordinate orig, RoomCamera self, Vector2 coord)
+        {
+            VoxelMap map = VoxelWorld.GetVoxelMap(self.room);
+            if (map?.HasVoxelMap ?? false)
+            {
+                int x = (int)coord.x;
+                int y = (int)coord.y;
+                int z = map.GetDepth(x, y);
+
+                byte voxel = map.GetVoxel(x, y, z);
+                int paletteIndex = VoxelMap.GetPaletteColor(voxel);
+
+                // Adapted from RoomCamera.PixelColorAtCoordinate
+                if (z >= 30 || paletteIndex == 0)
+                    return self.paletteTexture.GetPixel(0, 7);
+                
+                // TODO: Check lightmask
+                float shadow = 1f;
+
+                paletteIndex--;
+                Color color = Color.Lerp(self.paletteTexture.GetPixel(z, paletteIndex + 3), self.paletteTexture.GetPixel(z, paletteIndex), shadow);
+                return Color.Lerp(color, self.paletteTexture.GetPixel(1, 7), z * (1f - self.paletteTexture.GetPixel(9, 7).r) / 30f);
+            }
+            else
+                return orig(self, coord);
+        }
+
+        private static float RoomCamera_DepthAtCoordinate(On.RoomCamera.orig_DepthAtCoordinate orig, RoomCamera self, Vector2 coord)
+        {
+            VoxelMap map = VoxelWorld.GetVoxelMap(self.room);
+            if (map?.HasVoxelMap ?? false)
+            {
+                return map.GetDepth((int)coord.x, (int)coord.y);
+            }
+            else
+                return orig(self, coord);
         }
 
         private static readonly Dictionary<int, string> shortcutDotSprites = new Dictionary<int, string>()

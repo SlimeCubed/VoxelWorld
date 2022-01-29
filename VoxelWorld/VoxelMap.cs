@@ -183,17 +183,36 @@ namespace VoxelWorld
                                     }
                                 }
 
-                                if(voxel != 0)
+                                if (voxel != 0)
                                 {
                                     outSubchunks[x / scSize + scYOffset + scZOffset] = true;
                                 }
 
-                                outVoxels[x + yOffset + zOffset] = voxel == 0 ? voxel : (byte)(voxel | 0b11000000);
+                                outVoxels[x + yOffset + zOffset] = voxel;
                             }
                         }
 
                         if (!loadingVoxels) break;
                     }
+
+                    // Fill empty chunks with voxels that cause the raymarcher to quit early
+                    /*for (int z = 0; z < depth; z++)
+                    {
+                        int zOffset = z * width * height;
+                        int scZOffset = z / scSize * scsWidth * scsHeight;
+
+                        for (int y = 0; y < height; y++)
+                        {
+                            int yOffset = y * width;
+                            int scYOffset = y / scSize * scsWidth;
+
+                            for (int x = 0; x < width; x++)
+                            {
+                                if (!outSubchunks[x / scSize + scYOffset + scZOffset])
+                                    outVoxels[x + yOffset + zOffset] = 0b10000000;
+                            }
+                        }
+                    }*/
                 }
 
                 VoxelWorld.LogThreaded($"Successfully loaded voxel map: {room.abstractRoom.name}");
@@ -236,13 +255,20 @@ namespace VoxelWorld
 
         public bool IsSolid(int x, int y, int z)
         {
-            x = Mathf.Clamp(x, 0, XVoxels - 1);
-            y = Mathf.Clamp(y, 0, YVoxels - 1);
-            z = Mathf.Clamp(z, 0, ZVoxels - 1);
-            return GetPaletteColor(Voxels[x + y * XVoxels + z * XVoxels * YVoxels]) > 0;
+            return GetPaletteColor(GetVoxel(x, y, z)) > 0;
         }
 
         public static int GetPaletteColor(byte voxel) => voxel & 0x3;
+        public static int GetEffectColor(byte voxel) => (voxel >> 2) & 0x3;
+        public static float GetEffectIntensity(byte voxel) => ((voxel >> 4) & 0xF) / (float)0xF;
+
+        public byte GetVoxel(int x, int y, int z)
+        {
+            x = Mathf.Clamp(x, 0, XVoxels - 1);
+            y = Mathf.Clamp(y, 0, YVoxels - 1);
+            z = Mathf.Clamp(z, 0, ZVoxels - 1);
+            return Voxels[x + y * XVoxels + z * XVoxels * YVoxels];
+        }
 
         public void Update()
         {
