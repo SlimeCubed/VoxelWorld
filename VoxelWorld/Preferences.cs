@@ -19,16 +19,22 @@ namespace VoxelWorld
         public static float terrainThickness = chunkSize;
         public static int loadPerFrameLimit = 1;
         public static int unloadPerFrameLimit = 2;
-        public static float preloadDistanceFactor = 1f;
-        public static float forceLoadDistanceFactor = 0.5f;
+        public static float preloadDistanceFactor = 0.5f;
+        public static float forceLoadDistanceFactor = 0.25f;
         public static float unloadDelay = 3f;
         public static bool allowLowQuality = true;
         public static bool forceLoadOnScreenTransition = true;
+
+        // Shadows
+        public static int shadowMapSize = 1024;
+        public static float shadowMapScale = 1f;
+        public static float lightPenetration = 15f;
 
         // Camera
         public static ScrollingMode scrollMode = ScrollingMode.BacktrackRectangle;
         public static TrackingMode trackingMode = TrackingMode.Complex;
         public static float cameraDepth = 900f;
+        public static float sunDistance = 20000f;
 
         // Scrolling
         public static float trackRectWidth = 300f;

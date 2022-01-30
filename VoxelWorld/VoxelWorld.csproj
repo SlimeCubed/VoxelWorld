@@ -116,6 +116,9 @@
   <ItemGroup>
     <EmbeddedResource Include="Atlases\Sprites.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\VoxelDepth.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if defined RWMods (copy /Y "$(TargetPath)" "%25RWMods%25")</PostBuildEvent>

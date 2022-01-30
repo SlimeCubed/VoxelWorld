@@ -13,6 +13,7 @@ namespace VoxelWorld
         private static readonly List<VoxelChunk> shouldLoad = new List<VoxelChunk>();
         private static readonly List<VoxelChunk> mustLoad = new List<VoxelChunk>();
 
+        public int ChunksChanged { get; private set; }
         private readonly VoxelMap map;
         private readonly VoxelChunk[,] chunks;
         private int forceLoadTimer;
@@ -52,6 +53,8 @@ namespace VoxelWorld
 
         public void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
         {
+            ChunksChanged = 0;
+
             var container = sLeaser.containers[0];
             int width = chunks.GetLength(0);
             int height = chunks.GetLength(1);
@@ -101,16 +104,20 @@ namespace VoxelWorld
             {
                 Vector2 focalPoint = rCam.followAbstractCreature?.realizedCreature?.mainBodyChunk.pos ?? (camPos + new Vector2(Futile.screen.halfWidth, Futile.screen.halfHeight));
                 var loadChunksHQ = shouldLoad.OrderBy(c => Vector2.SqrMagnitude(c.WorldCenter - focalPoint)).Take(Preferences.loadPerFrameLimit);
-                
+
                 // Load a fixed amount of chunks at full quality
-                foreach(var loadChunkHQ in loadChunksHQ)
+                foreach (var loadChunkHQ in loadChunksHQ)
+                {
                     loadChunkHQ.Quality = shouldLoadQuality;
+                    ChunksChanged++;
+                }
                 
                 // Load any chunks that are on screen but not loaded with a low-quality version
                 foreach(var loadChunkLQ in mustLoad)
                 {
                     if (loadChunksHQ.Contains(loadChunkLQ)) continue;
                     loadChunkLQ.Quality = mustLoadQuality;
+                    ChunksChanged++;
                 }
             }
             

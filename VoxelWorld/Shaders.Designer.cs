@@ -74,7 +74,7 @@ namespace VoxelWorld {
         /// // Stats for Vertex shader:
         /// //       d3d11 : 9 math
         /// // Stats for Fragment shader:
-        /// //       d3d11 : 135 math, 11 texture, 9 branch
+        /// //       d3d11 : 133 math, 11 texture, 9 branch
         /// Pass {
         ///  Tags { &quot;QUEUE&quot;=&quot;Transparent&quot; &quot;IGNOREPROJECTOR&quot;=&quot;true&quot; &quot;RenderType&quot;=&quot;Transparent&quot; }
         ///  BindChannels {
@@ -152,15 +152,15 @@ namespace VoxelWorld {
         ///
         ///
         /// // Stats for Vertex shader:
-        /// //       d3d11 : 17 math
+        /// //       d3d11 : 10 math
         /// // Stats for Fragment shader:
-        /// //       d3d11 : 39 math, 3 branch
+        /// //       d3d11 : 48 math, 3 branch
         /// Pass {
         ///  Tags { &quot;QUEUE&quot;=&quot;Geometry&quot; &quot;RenderType&quot;=&quot;Opaque&quot; }
         ///  ZTest Less
         ///Program &quot;vp&quot; {
         ///SubProgram &quot;d3d11 &quot; {
-        ///// Stats: 17 math
+        ///// Stats: 10 math
         ///Bind &quot;vertex&quot; Vertex
         ///Bind &quot;color&quot; Color
         ///C [rest of string was truncated]&quot;;.
@@ -168,6 +168,38 @@ namespace VoxelWorld {
         internal static string VoxelChunk {
             get {
                 return ResourceManager.GetString("VoxelChunk", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 5.9KB
+        ///
+        ///Shader &quot;Futile/VoxelDepth&quot; {
+        ///Properties {
+        /// _MainTex (&quot;Voxels&quot;, 3D) = &quot;white&quot; {}
+        ///}
+        ///SubShader { 
+        /// LOD 100
+        /// Tags { &quot;QUEUE&quot;=&quot;Geometry&quot; &quot;RenderType&quot;=&quot;Opaque&quot; }
+        ///
+        ///
+        /// // Stats for Vertex shader:
+        /// //       d3d11 : 10 math
+        /// // Stats for Fragment shader:
+        /// //       d3d11 : 35 math, 3 branch
+        /// Pass {
+        ///  Tags { &quot;QUEUE&quot;=&quot;Geometry&quot; &quot;RenderType&quot;=&quot;Opaque&quot; }
+        ///  ZTest Less
+        ///Program &quot;vp&quot; {
+        ///SubProgram &quot;d3d11 &quot; {
+        ///// Stats: 10 math
+        ///Bind &quot;vertex&quot; Vertex
+        ///Bind &quot;color&quot; Color
+        ///C [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string VoxelDepth {
+            get {
+                return ResourceManager.GetString("VoxelDepth", resourceCulture);
             }
         }
         

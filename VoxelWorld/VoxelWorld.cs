@@ -127,6 +127,7 @@ namespace VoxelWorld
             CustomAtlases.FetchAtlas("Sprites");
 
             self.Shaders["VoxelChunk"] = FShader.CreateShader("VoxelChunk", new Material(Shaders.VoxelChunk).shader);
+            self.Shaders["VoxelDepth"] = FShader.CreateShader("VoxelDepth", new Material(Shaders.VoxelDepth).shader);
         }
     }
 }

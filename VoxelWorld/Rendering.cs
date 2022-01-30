@@ -154,6 +154,12 @@ namespace VoxelWorld
                 Shader.SetGlobalTexture("_LevelTex", self.levelTexture);
             }
             renderingVoxels = nowRenderingVoxels;
+
+            if(nowRenderingVoxels)
+            {
+                rtCam.lightAngle.x = Mathf.Atan2(self.room.lightAngle.x, Preferences.chunkSize / 30f) * Mathf.Rad2Deg;
+                rtCam.lightAngle.y = Mathf.Atan2(self.room.lightAngle.y, Preferences.chunkSize / 30f) * Mathf.Rad2Deg;
+            }
         }
 
         private static void Futile_Init(On.Futile.orig_Init orig, Futile self, FutileParams futileParams)
@@ -174,16 +180,40 @@ namespace VoxelWorld
 
         private class VoxelCamera : MonoBehaviour
         {
+            public Vector3 lightAngle = new Vector3(0f, 0f, 180f);
             private Camera cam;
+            private Camera lightCam;
             private Camera srcCam;
+            private Shader voxelDepth;
+            private RenderTexture shadowMap;
 
             private Camera Cam => cam ?? (cam = GetComponent<Camera>());
             private Camera SrcCam => srcCam ?? (srcCam = transform.parent.GetComponent<Camera>());
+
+            public void Start()
+            {
+                var go = new GameObject("Sunlight Shadowmapper");
+                lightCam = go.AddComponent<Camera>();
+                lightCam.enabled = false;
+                voxelDepth = FindObjectOfType<RainWorld>().Shaders["VoxelDepth"].shader;
+
+                shadowMap = new RenderTexture(Preferences.shadowMapSize, Preferences.shadowMapSize, 32, RenderTextureFormat.RFloat);
+                shadowMap.filterMode = FilterMode.Trilinear;
+                shadowMap.anisoLevel = 0;
+                lightCam.targetTexture = shadowMap;
+                lightCam.backgroundColor = Color.clear;
+            }
+
+            public void OnDestroy()
+            {
+                Destroy(lightCam.gameObject);
+            }
 
             public void LateUpdate()
             {
                 //UpdateSimulatedCamera();
                 UpdateCamera();
+                UpdateLightCamera();
             }
 
             // Real camera
@@ -197,6 +227,38 @@ namespace VoxelWorld
                 Cam.farClipPlane = Preferences.cameraDepth * 5f;
                 Cam.depth = SrcCam.depth - 1f;
                 Cam.enabled = renderingVoxels;
+            }
+
+            // Camera used for shadowmapping
+            public void UpdateLightCamera()
+            {
+                lightCam.enabled = renderingVoxels;
+
+                Quaternion angle = Quaternion.Euler(lightAngle);
+                lightCam.transform.position = Cam.transform.parent.position - angle * Vector3.forward * Preferences.sunDistance;
+                lightCam.transform.localRotation = angle;
+                lightCam.orthographic = false;
+
+                // The projection matrix approximates a cube
+                // It must always cover the visible portion of the level
+                float cubeSize = Mathf.Max(Cam.pixelWidth, Cam.pixelHeight) * Preferences.shadowMapScale;
+
+                lightCam.nearClipPlane = Preferences.sunDistance - cubeSize / 2f;
+                lightCam.farClipPlane = Preferences.sunDistance + cubeSize / 2f;
+                lightCam.fieldOfView = 2f * Mathf.Rad2Deg * Mathf.Atan2(cubeSize / 2f, lightCam.nearClipPlane);
+                
+                lightCam.SetReplacementShader(voxelDepth, "RenderType");
+                lightCam.depth = -1000f;
+                lightCam.cullingMask = 1 << Preferences.voxelSpriteLayer;
+
+                //lightCam.depth = 1000000f;
+                //lightCam.targetTexture = null;
+
+                // Update shader variables
+                Matrix4x4 toCam = lightCam.worldToCameraMatrix;
+                toCam[2, 3] += Preferences.lightPenetration;
+                Shader.SetGlobalMatrix("_VoxelShadowVP", lightCam.projectionMatrix * toCam);
+                Shader.SetGlobalTexture("_VoxelShadowTex", shadowMap);
             }
 
             // Simulated camera
