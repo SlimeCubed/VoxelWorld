@@ -106,7 +106,8 @@ namespace VoxelWorld
 
             this.room = room;
             string roomName = room.abstractRoom.name;
-            FilePath = $"{Custom.RootFolderDirectory()}Voxels/{roomName.Split(new string[] { "_" }, StringSplitOptions.None)[0]}/{roomName}_Voxels.vx1".Replace('/', Path.DirectorySeparatorChar);
+
+            FilePath = VoxelWorld.GetRoomFilePath(roomName, "_Voxels.vx1");
             if (File.Exists(FilePath))
             {
                 loadingVoxels = true;
@@ -196,7 +197,7 @@ namespace VoxelWorld
                     }
 
                     // Fill empty chunks with voxels that cause the raymarcher to quit early
-                    /*for (int z = 0; z < depth; z++)
+                    for (int z = 0; z < depth; z++)
                     {
                         int zOffset = z * width * height;
                         int scZOffset = z / scSize * scsWidth * scsHeight;
@@ -209,10 +210,10 @@ namespace VoxelWorld
                             for (int x = 0; x < width; x++)
                             {
                                 if (!outSubchunks[x / scSize + scYOffset + scZOffset])
-                                    outVoxels[x + yOffset + zOffset] = 0b10000000;
+                                    outVoxels[x + yOffset + zOffset] = 0x80;
                             }
                         }
-                    }*/
+                    }
                 }
 
                 VoxelWorld.LogThreaded($"Successfully loaded voxel map: {room.abstractRoom.name}");

@@ -11,6 +11,7 @@ namespace VoxelWorld
         private static VoxelCamera rtCam;
         private static RenderTexture rt;
         private static bool renderingVoxels;
+        private static Vector2 renderingCamPos;
 
         public static void Enable()
         {
@@ -131,6 +132,12 @@ namespace VoxelWorld
 
         private static void RoomCamera_DrawUpdate(On.RoomCamera.orig_DrawUpdate orig, RoomCamera self, float timeStacker, float timeSpeed)
         {
+            if (Preferences.uncapFramerates)
+            {
+                Application.targetFrameRate = -1;
+                QualitySettings.vSyncCount = 0;
+            }
+
             orig(self, timeStacker, timeSpeed);
             var vm = VoxelWorld.GetVoxelMap(self.room);
             var lg = self.levelGraphic;
@@ -154,11 +161,12 @@ namespace VoxelWorld
                 Shader.SetGlobalTexture("_LevelTex", self.levelTexture);
             }
             renderingVoxels = nowRenderingVoxels;
+            renderingCamPos = Vector2.Lerp(self.lastPos, self.pos, timeStacker);
 
-            if(nowRenderingVoxels)
+            if (nowRenderingVoxels)
             {
-                rtCam.lightAngle.x = Mathf.Atan2(self.room.lightAngle.x, Preferences.chunkSize / 30f) * Mathf.Rad2Deg;
-                rtCam.lightAngle.y = Mathf.Atan2(self.room.lightAngle.y, Preferences.chunkSize / 30f) * Mathf.Rad2Deg;
+                rtCam.lightAngle.x = Mathf.Atan2(self.room.lightAngle.x, Preferences.chunkSize / 15f) * Mathf.Rad2Deg;
+                rtCam.lightAngle.y = Mathf.Atan2(self.room.lightAngle.y, Preferences.chunkSize / 15f) * Mathf.Rad2Deg;
             }
         }
 
@@ -186,6 +194,7 @@ namespace VoxelWorld
             private Camera srcCam;
             private Shader voxelDepth;
             private RenderTexture shadowMap;
+            private Vector2 shadowPos;
 
             private Camera Cam => cam ?? (cam = GetComponent<Camera>());
             private Camera SrcCam => srcCam ?? (srcCam = transform.parent.GetComponent<Camera>());
@@ -232,10 +241,17 @@ namespace VoxelWorld
             // Camera used for shadowmapping
             public void UpdateLightCamera()
             {
-                lightCam.enabled = renderingVoxels;
+                bool dirty = ((Vector2.Distance(renderingCamPos, shadowPos) > 20f) || Input.GetKey(KeyCode.Alpha6) || Input.GetKeyUp(KeyCode.Alpha6)) && renderingVoxels;
+
+                lightCam.enabled = dirty;
+                if(dirty)
+                {
+                    shadowPos = renderingCamPos;
+                }
 
                 Quaternion angle = Quaternion.Euler(lightAngle);
                 lightCam.transform.position = Cam.transform.parent.position - angle * Vector3.forward * Preferences.sunDistance;
+                lightCam.transform.position += (Vector3)(shadowPos - renderingCamPos);
                 lightCam.transform.localRotation = angle;
                 lightCam.orthographic = false;
 
@@ -249,10 +265,18 @@ namespace VoxelWorld
                 
                 lightCam.SetReplacementShader(voxelDepth, "RenderType");
                 lightCam.depth = -1000f;
-                lightCam.cullingMask = 1 << Preferences.voxelSpriteLayer;
+                lightCam.cullingMask = 1 << Preferences.voxelSpriteLayer | 1 << Preferences.lightCookieLayer;
 
-                //lightCam.depth = 1000000f;
-                //lightCam.targetTexture = null;
+                if (Preferences.viewShadowMap)
+                {
+                    if (Input.GetKey(KeyCode.Alpha6))
+                    {
+                        lightCam.depth = 1000000f;
+                        lightCam.targetTexture = null;
+                    }
+                    else
+                        lightCam.targetTexture = shadowMap;
+                }
 
                 // Update shader variables
                 Matrix4x4 toCam = lightCam.worldToCameraMatrix;
@@ -282,7 +306,7 @@ namespace VoxelWorld
                 Cam.targetTexture = rt;
                 Cam.backgroundColor = Color.white;
                 Cam.cullingMask = 1 << Preferences.voxelSpriteLayer;
-                SrcCam.cullingMask &= ~(1 << Preferences.voxelSpriteLayer);
+                SrcCam.cullingMask &= ~(1 << Preferences.voxelSpriteLayer | 1 << Preferences.lightCookieLayer);
 
                 Shader.SetGlobalTexture("_LevelTex", rt);
             }

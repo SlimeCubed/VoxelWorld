@@ -70,6 +70,7 @@
     <Compile Include="CameraScroll.cs" />
     <Compile Include="CustomAtlases.cs" />
     <Compile Include="Diag.cs" />
+    <Compile Include="FLightCookieSprite.cs" />
     <Compile Include="FVoxelChunkNode.cs" />
     <Compile Include="IntVector3.cs" />
     <Compile Include="Preferences.cs" />
@@ -118,6 +119,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\VoxelDepth.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\VoxelLightCookie.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

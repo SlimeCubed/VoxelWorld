@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
@@ -17,6 +18,7 @@ namespace VoxelWorld
         private readonly VoxelMap map;
         private readonly VoxelChunk[,] chunks;
         private int forceLoadTimer;
+        private Texture2D voxelLightCookie;
 
         public VoxelMapView(VoxelMap map)
         {
@@ -32,6 +34,24 @@ namespace VoxelWorld
                     chunks[x, y] = new VoxelChunk(map, x, y);
                 }
             }
+
+            try
+            {
+                var bytes = File.ReadAllBytes(VoxelWorld.GetRoomFilePath(map.room.abstractRoom.name, ".png"));
+                var tex = new Texture2D(1, 1, TextureFormat.DXT5, false);
+                tex.anisoLevel = 0;
+                tex.filterMode = FilterMode.Point;
+                tex.wrapMode = TextureWrapMode.Clamp;
+                tex.LoadImage(bytes);
+                tex.Apply(false, true); // Make the texture non-readable, freeing memory
+
+                voxelLightCookie = tex;
+            }
+            catch
+            {
+                // Don't add a light cookie if the file doesn't exist
+                voxelLightCookie = null;
+            }
         }
 
         public void ForceLoad()
@@ -43,6 +63,11 @@ namespace VoxelWorld
         {
             if (newContainer == null) newContainer = rCam.ReturnFContainer("Foreground");
 
+            if(voxelLightCookie != null)
+            {
+                newContainer.AddChild(sLeaser.containers[1]);
+                sLeaser.containers[1].MoveInFrontOfOtherNode(rCam.levelGraphic);
+            }
             newContainer.AddChild(sLeaser.containers[0]);
             sLeaser.containers[0].MoveInFrontOfOtherNode(rCam.levelGraphic);
         }
@@ -54,6 +79,16 @@ namespace VoxelWorld
         public void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
         {
             ChunksChanged = 0;
+
+            // Update light cookie
+            if (voxelLightCookie != null)
+            {
+                var size = new Vector2(voxelLightCookie.width, voxelLightCookie.height);
+                var cookie = (FLightCookieSprite)sLeaser.containers[1].GetChildAt(0);
+                cookie.SetPosition(new Vector2(map.XVoxels, map.YVoxels) / 2f + map.DisplayOffset.ToVector2() * 20f - camPos - new Vector2(rCam.room.lightAngle.x, -rCam.room.lightAngle.y) * 30f);
+                cookie.scaleX = size.x;
+                cookie.scaleY = size.y;
+            }
 
             var container = sLeaser.containers[0];
             int width = chunks.GetLength(0);
@@ -173,10 +208,17 @@ namespace VoxelWorld
 
         public void InitiateSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
         {
-            var container = new FContainer();
+            var voxelContainer = new FContainer();
+            var cookieContainer = new FContainer();
 
             sLeaser.sprites = new FSprite[0];
-            sLeaser.containers = new FContainer[1] { container };
+            sLeaser.containers = new FContainer[] { voxelContainer, cookieContainer };
+
+            if(voxelLightCookie != null)
+            {
+                Debug.Log("Added cookie!");
+                cookieContainer.AddChild(new FLightCookieSprite(voxelLightCookie));
+            }
 
             int width = chunks.GetLength(0);
             int height = chunks.GetLength(1);
@@ -184,11 +226,19 @@ namespace VoxelWorld
             {
                 for (int chunkX = 0; chunkX < width; chunkX++)
                 {
-                    container.AddChild(new FVoxelChunkNode(rCam.room.game.rainWorld));
+                    voxelContainer.AddChild(new FVoxelChunkNode(rCam.room.game.rainWorld));
                 }
             }
 
             AddToContainer(sLeaser, rCam, null);
+        }
+
+        ~VoxelMapView()
+        {
+            if (voxelLightCookie != null)
+            {
+                TextureManager.EnqueueDeletion(voxelLightCookie);
+            }
         }
 
         internal class VoxelChunk
@@ -531,7 +581,7 @@ namespace VoxelWorld
             {
                 if (Mesh == null) return;
 
-                UnityEngine.Object.Destroy(Mesh);
+                TextureManager.EnqueueDeletion(Mesh);
             }
 
             private void CollapseBounds(ref int xMin, ref int yMin, ref int zMin, ref int xMax, ref int yMax, ref int zMax)
@@ -656,6 +706,11 @@ namespace VoxelWorld
                 Unloaded,
                 Low,
                 High
+            }
+
+            ~VoxelChunk()
+            {
+                Quality = TextureQuality.Unloaded;
             }
         }
 

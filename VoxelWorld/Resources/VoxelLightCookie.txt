@@ -1,0 +1,67 @@
+// Compiled shader for all platforms, uncompressed size: 2.3KB
+
+Shader "Custom/VoxelLightCookie" {
+Properties {
+ _MainTex ("Base (RGB)", 2D) = "white" {}
+}
+SubShader { 
+ LOD 200
+ Tags { "QUEUE"="AlphaTest" "RenderType"="VoxelLightCookie" }
+
+
+ // Stats for Vertex shader:
+ //       d3d11 : 5 math
+ Pass {
+  Tags { "QUEUE"="AlphaTest" "RenderType"="VoxelLightCookie" }
+  ZTest Always
+  Cull Off
+Program "vp" {
+SubProgram "d3d11 " {
+// Stats: 5 math
+Bind "vertex" Vertex
+Bind "texcoord" TexCoord0
+ConstBuffer "$Globals" 32
+Vector 16 [_MainTex_ST]
+ConstBuffer "UnityPerDraw" 336
+Matrix 0 [glstate_matrix_mvp]
+BindCB  "$Globals" 0
+BindCB  "UnityPerDraw" 1
+"vs_4_0
+eefiecedmbkahpbfangkmfghbkgbkcjnahodghlgabaaaaaaaeacaaaaadaaaaaa
+cmaaaaaaiaaaaaaaniaaaaaaejfdeheoemaaaaaaacaaaaaaaiaaaaaadiaaaaaa
+aaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaahahaaaaebaaaaaaaaaaaaaaaaaaaaaa
+adaaaaaaabaaaaaaadadaaaafaepfdejfeejepeoaafeeffiedepepfceeaaklkl
+epfdeheofaaaaaaaacaaaaaaaiaaaaaadiaaaaaaaaaaaaaaabaaaaaaadaaaaaa
+aaaaaaaaapaaaaaaeeaaaaaaaaaaaaaaaaaaaaaaadaaaaaaabaaaaaaadamaaaa
+fdfgfpfaepfdejfeejepeoaafeeffiedepepfceeaaklklklfdeieefcceabaaaa
+eaaaabaaejaaaaaafjaaaaaeegiocaaaaaaaaaaaacaaaaaafjaaaaaeegiocaaa
+abaaaaaaaeaaaaaafpaaaaadhcbabaaaaaaaaaaafpaaaaaddcbabaaaabaaaaaa
+ghaaaaaepccabaaaaaaaaaaaabaaaaaagfaaaaaddccabaaaabaaaaaagiaaaaac
+abaaaaaadiaaaaaipcaabaaaaaaaaaaafgbfbaaaaaaaaaaaegiocaaaabaaaaaa
+abaaaaaadcaaaaakpcaabaaaaaaaaaaaegiocaaaabaaaaaaaaaaaaaaagbabaaa
+aaaaaaaaegaobaaaaaaaaaaadcaaaaakpcaabaaaaaaaaaaaegiocaaaabaaaaaa
+acaaaaaakgbkbaaaaaaaaaaaegaobaaaaaaaaaaaaaaaaaaipccabaaaaaaaaaaa
+egaobaaaaaaaaaaaegiocaaaabaaaaaaadaaaaaadcaaaaaldccabaaaabaaaaaa
+egbabaaaabaaaaaaegiacaaaaaaaaaaaabaaaaaaogikcaaaaaaaaaaaabaaaaaa
+doaaaaab"
+}
+}
+Program "fp" {
+SubProgram "d3d11 " {
+SetTexture 0 [_MainTex] 2D 0
+"ps_4_0
+eefiecedimepghjoefhmkfdnenafghcibmkffhoiabaaaaaacmabaaaaadaaaaaa
+cmaaaaaaieaaaaaaliaaaaaaejfdeheofaaaaaaaacaaaaaaaiaaaaaadiaaaaaa
+aaaaaaaaabaaaaaaadaaaaaaaaaaaaaaapaaaaaaeeaaaaaaaaaaaaaaaaaaaaaa
+adaaaaaaabaaaaaaadadaaaafdfgfpfaepfdejfeejepeoaafeeffiedepepfcee
+aaklklklepfdeheocmaaaaaaabaaaaaaaiaaaaaacaaaaaaaaaaaaaaaaaaaaaaa
+adaaaaaaaaaaaaaaapaaaaaafdfgfpfegbhcghgfheaaklklfdeieefcgmaaaaaa
+eaaaaaaablaaaaaafkaaaaadaagabaaaaaaaaaaafibiaaaeaahabaaaaaaaaaaa
+ffffaaaagcbaaaaddcbabaaaabaaaaaagfaaaaadpccabaaaaaaaaaaaeiaaaaal
+pccabaaaaaaaaaaaegbabaaaabaaaaaaeghobaaaaaaaaaaaaagabaaaaaaaaaaa
+abeaaaaaaaaaaaaadoaaaaab"
+}
+}
+ }
+}
+}

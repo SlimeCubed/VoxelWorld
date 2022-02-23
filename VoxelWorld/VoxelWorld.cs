@@ -1,8 +1,10 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using BepInEx;
 using UnityEngine;
+using RWCustom;
 
 namespace VoxelWorld
 {
@@ -56,6 +58,11 @@ namespace VoxelWorld
                 }
                 threadedExceptions.Clear();
             }
+        }
+
+        public static string GetRoomFilePath(string name, string suffix)
+        {
+            return $"{Custom.RootFolderDirectory()}Voxels/{name.Split(new string[] { "_" }, StringSplitOptions.None)[0]}/{name}{suffix}".Replace('/', Path.DirectorySeparatorChar);
         }
 
         public static void LogThreaded(string msg)

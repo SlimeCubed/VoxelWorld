@@ -19,7 +19,9 @@ namespace VoxelWorld
             On.RainWorld.Start += (orig, self) =>
             {
                 orig(self);
-                Futile.instance.camera.transform.GetChild(0).gameObject.AddComponent<FrameTimer>();
+                var go = Futile.instance.camera.transform.GetChild(0).gameObject;
+                go.AddComponent<FrameTimer>();
+                go.AddComponent<FPSMeter>();
                 //new GameObject("Cam Timer", typeof(FrameTimer));
             };
         }
@@ -27,6 +29,37 @@ namespace VoxelWorld
         public static void Log(string msg)
         {
             UnityEngine.Debug.Log(msg);
+        }
+
+        private class FPSMeter : MonoBehaviour
+        {
+            private FLabel label;
+            private float[] frameTimes = new float[16];
+            private int i;
+
+            public void Start()
+            {
+                label = new FLabel("font", "--")
+                {
+                    color = new Color(0.1f, 1f, 0.3f),
+                    anchorX = 0f,
+                    anchorY = 1f
+                };
+                Futile.stage.AddChild(label);
+            }
+
+            public void LateUpdate()
+            {
+                label.MoveToFront();
+                label.x = 10.15f;
+                label.y = Futile.screen.height - 10.15f;
+
+                frameTimes[i++] = Time.deltaTime;
+                i %= frameTimes.Length;
+
+                label.text = Mathf.RoundToInt(1f / frameTimes.Average()).ToString();
+                label.isVisible = Preferences.showFPS;
+            }
         }
 
         private class FrameTimer : MonoBehaviour
