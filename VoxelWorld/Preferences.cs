@@ -25,10 +25,10 @@ namespace VoxelWorld
         public static float unloadDelay = 3f;
         public static bool allowLowQuality = true;
         public static bool forceLoadOnScreenTransition = true;
-        public static bool uncapFramerates = true; // false
+        public static bool uncapFramerates = false;
 
         // Shadows
-        public static bool viewShadowMap = true; // false
+        public static bool viewShadowMap = false;
         public static int shadowMapSize = 2048;
         public static float shadowMapScale = 1.15f;
         public static float lightPenetration = 12f;
@@ -50,7 +50,7 @@ namespace VoxelWorld
 
         // Misc
         public static bool showDiagnostics = false;
-        public static bool showFPS = true;
+        public static bool showFPS = false;
 
         public enum ScrollingMode
         {

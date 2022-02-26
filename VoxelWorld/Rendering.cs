@@ -11,7 +11,7 @@ namespace VoxelWorld
         private static VoxelCamera rtCam;
         private static RenderTexture rt;
         private static bool renderingVoxels;
-        private static Vector2 renderingCamPos;
+        private static RoomPos renderingCamPos;
 
         public static void Enable()
         {
@@ -161,7 +161,7 @@ namespace VoxelWorld
                 Shader.SetGlobalTexture("_LevelTex", self.levelTexture);
             }
             renderingVoxels = nowRenderingVoxels;
-            renderingCamPos = Vector2.Lerp(self.lastPos, self.pos, timeStacker);
+            renderingCamPos = new RoomPos(self.room, Vector2.Lerp(self.lastPos, self.pos, timeStacker));
 
             if (nowRenderingVoxels)
             {
@@ -194,7 +194,7 @@ namespace VoxelWorld
             private Camera srcCam;
             private Shader voxelDepth;
             private RenderTexture shadowMap;
-            private Vector2 shadowPos;
+            private RoomPos shadowPos;
 
             private Camera Cam => cam ?? (cam = GetComponent<Camera>());
             private Camera SrcCam => srcCam ?? (srcCam = transform.parent.GetComponent<Camera>());
@@ -241,7 +241,7 @@ namespace VoxelWorld
             // Camera used for shadowmapping
             public void UpdateLightCamera()
             {
-                bool dirty = ((Vector2.Distance(renderingCamPos, shadowPos) > 20f) || Input.GetKey(KeyCode.Alpha6) || Input.GetKeyUp(KeyCode.Alpha6)) && renderingVoxels;
+                bool dirty = ((renderingCamPos.Distance(shadowPos) > 20f) || Input.GetKey(KeyCode.Alpha6) || Input.GetKeyUp(KeyCode.Alpha6)) && renderingVoxels;
 
                 lightCam.enabled = dirty;
                 if(dirty)
@@ -251,7 +251,7 @@ namespace VoxelWorld
 
                 Quaternion angle = Quaternion.Euler(lightAngle);
                 lightCam.transform.position = Cam.transform.parent.position - angle * Vector3.forward * Preferences.sunDistance;
-                lightCam.transform.position += (Vector3)(shadowPos - renderingCamPos);
+                lightCam.transform.position += (Vector3)(shadowPos.pos - renderingCamPos.pos);
                 lightCam.transform.localRotation = angle;
                 lightCam.orthographic = false;
 
@@ -309,6 +309,49 @@ namespace VoxelWorld
                 SrcCam.cullingMask &= ~(1 << Preferences.voxelSpriteLayer | 1 << Preferences.lightCookieLayer);
 
                 Shader.SetGlobalTexture("_LevelTex", rt);
+            }
+        }
+
+        private struct RoomPos
+        {
+            public int room;
+            public Vector2 pos;
+
+            public RoomPos(Room room, Vector2 pos)
+            {
+                this.room = room?.abstractRoom?.index ?? -1;
+                this.pos = pos;
+            }
+
+            public float Distance(RoomPos other)
+            {
+                if (room == -1 || other.room == -1) return float.PositiveInfinity;
+                return room == other.room ? Vector2.Distance(pos, other.pos) : float.PositiveInfinity;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is RoomPos other &&
+                       room == other.room &&
+                       EqualityComparer<Vector2>.Default.Equals(pos, other.pos);
+            }
+
+            public override int GetHashCode()
+            {
+                int hashCode = -1039860717;
+                hashCode = hashCode * -1521134295 + room.GetHashCode();
+                hashCode = hashCode * -1521134295 + pos.GetHashCode();
+                return hashCode;
+            }
+
+            public static bool operator ==(RoomPos left, RoomPos right)
+            {
+                return left.Equals(right);
+            }
+
+            public static bool operator !=(RoomPos left, RoomPos right)
+            {
+                return !(left == right);
             }
         }
     }

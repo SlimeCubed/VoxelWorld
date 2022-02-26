@@ -54,7 +54,7 @@ namespace VoxelWorld
                 label.x = 10.15f;
                 label.y = Futile.screen.height - 10.15f;
 
-                frameTimes[i++] = Time.deltaTime;
+                frameTimes[i++] = Time.unscaledDeltaTime;
                 i %= frameTimes.Length;
 
                 label.text = Mathf.RoundToInt(1f / frameTimes.Average()).ToString();

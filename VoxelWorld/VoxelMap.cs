@@ -107,11 +107,21 @@ namespace VoxelWorld
             this.room = room;
             string roomName = room.abstractRoom.name;
 
-            FilePath = VoxelWorld.GetRoomFilePath(roomName, "_Voxels.vx1");
+            FilePath = VoxelWorld.GetRoomFilePath(roomName, "_Voxels.vx1.gz");
             if (File.Exists(FilePath))
             {
                 loadingVoxels = true;
-                ThreadPool.QueueUserWorkItem(state => LoadVoxels(), null);
+                ThreadPool.QueueUserWorkItem(state => {
+                    try
+                    {
+                        LoadVoxels();
+                    }
+                    catch(Exception e)
+                    {
+                        VoxelWorld.LogThreaded(new Exception("Failed to call LoadVoxels!", e));
+                        loadingVoxels = false;
+                    }
+                }, null);
             }
         }
 
@@ -127,11 +137,30 @@ namespace VoxelWorld
             bool[] outSubchunks = null;
             try
             {
-                using (var br = new BinaryReader(new MemoryStream(File.ReadAllBytes(FilePath))))
+                // Compress uncompressed voxel files
+                /*if (!File.Exists(FilePath))
+                {
+                    using (var inFile = File.OpenRead(FilePath))
+                    using (var outGZip = new Ionic.Zlib.GZipStream(File.Create(FilePath), Ionic.Zlib.CompressionMode.Compress, Ionic.Zlib.CompressionLevel.BestCompression))
+                    {
+                        byte[] buffer = new byte[2000];
+                        int len;
+                        while ((len = inFile.Read(buffer, 0, 2000)) > 0)
+                        {
+                            outGZip.Write(buffer, 0, len);
+                        }
+                        outGZip.Flush();
+                    }
+                }*/
+
+
+                using (var br = new BinaryReader(new Ionic.Zlib.GZipStream(File.OpenRead(FilePath), Ionic.Zlib.CompressionMode.Decompress, Ionic.Zlib.CompressionLevel.BestCompression)))
                 {
                     int width = xVoxels = br.ReadUInt16();
                     int height = yVoxels = br.ReadUInt16();
                     int depth = zVoxels = br.ReadUInt16();
+
+                    VoxelWorld.LogThreaded($"Loading {width}x{height}x{depth} voxel map...");
 
                     displayOffset = new IntVector2(
                         br.ReadInt16(),
@@ -214,6 +243,7 @@ namespace VoxelWorld
                             }
                         }
                     }
+
                 }
 
                 VoxelWorld.LogThreaded($"Successfully loaded voxel map: {room.abstractRoom.name}");
