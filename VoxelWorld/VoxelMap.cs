@@ -1,18 +1,25 @@
 ﻿using System;
 using System.Threading;
 using System.IO;
+using System.Collections.Generic;
 using RWCustom;
 using UnityEngine;
+using LZ4;
 
 namespace VoxelWorld
 {
     // Holds voxel data for a room
     internal class VoxelMap
     {
-        private byte[] voxels;
+        private byte[][] lz4Chunks;
         private bool[] subchunks;
+        private byte[] lightCookieData;
         private bool loadingVoxels;
         private readonly object syncRoot = new object();
+
+        private static CachedChunk[] chunkCache;
+        private static Dictionary<IntVector3, int> chunkCacheIndices = new Dictionary<IntVector3, int>();
+        private static int cacheAge;
 
         private int xVoxels;
         private int yVoxels;
@@ -25,14 +32,61 @@ namespace VoxelWorld
         public readonly Room room;
 
         public string FilePath { get; }
-        public byte[] Voxels
+        public void GetVoxels(byte[] buffer, int chunkX, int chunkY, out int width, out int height, out int depth)
         {
-            get
-            {
-                WaitForVoxels();
-                return voxels;
-            }
+            WaitForVoxels();
+            DecompressChunk(lz4Chunks[chunkX + chunkY * XChunks], buffer, xVoxels, yVoxels, chunkX, chunkY, out width, out height, out depth);
         }
+        public byte[] GetVoxelsCached(int chunkX, int chunkY, out int width, out int height, out int depth)
+        {
+            if(chunkCache == null || chunkCache.Length != Preferences.maxCachedChunks)
+            {
+                chunkCache = new CachedChunk[Preferences.maxCachedChunks];
+                chunkCacheIndices.Clear();
+            }
+
+            // Check the cache for this chunk
+            var key = new IntVector3(chunkX, chunkY, room.abstractRoom.index);
+            if(!chunkCacheIndices.TryGetValue(key, out int index))
+            {
+                // Find the oldest chunk in the cache and replace it
+                index = 0;
+                for(int i = 1; i < chunkCache.Length; i++)
+                {
+                    if (chunkCache[i].age < chunkCache[index].age)
+                        index = i;
+                }
+
+                chunkCacheIndices.Remove(chunkCache[index].pos);
+                chunkCacheIndices[key] = index;
+
+                var buffer = chunkCache[index].data ?? new byte[Preferences.chunkSize * Preferences.chunkSize * 30];
+                GetVoxels(buffer, chunkX, chunkY, out width, out height, out depth);
+                chunkCache[index] = new CachedChunk(key, buffer, width, height, depth);
+            }
+            else
+            {
+                width = chunkCache[index].width;
+                height = chunkCache[index].height;
+                depth = chunkCache[index].depth;
+            }
+
+            if (chunkCache[index].age != cacheAge || cacheAge == 0)
+                chunkCache[index].age = ++cacheAge;
+
+            return chunkCache[index].data;
+        }
+
+        private static void DecompressChunk(byte[] lz4Data, byte[] buffer, int xVoxels, int yVoxels, int chunkX, int chunkY, out int width, out int height, out int depth)
+        {
+            // Bound checks would be redundant
+            width = Math.Min(xVoxels - chunkX * Preferences.chunkSize, Preferences.chunkSize);
+            height = Math.Min(yVoxels - chunkY * Preferences.chunkSize, Preferences.chunkSize);
+            depth = 30;
+
+            LZ4Codec.Decode(lz4Data, 0, lz4Data.Length, buffer, 0, width * height * depth, true);
+        }
+
         public int XVoxels
         {
             get
@@ -57,6 +111,9 @@ namespace VoxelWorld
                 return zVoxels;
             }
         }
+        public int XChunks => (XVoxels + Preferences.chunkSize - 1) / Preferences.chunkSize;
+        public int YChunks => (YVoxels + Preferences.chunkSize - 1) / Preferences.chunkSize;
+
         public IntVector2 DisplayOffset
         {
             get
@@ -65,7 +122,7 @@ namespace VoxelWorld
                 return displayOffset;
             }
         }
-        public bool HasVoxelMap => loadingVoxels || voxels != null;
+        public bool HasVoxelMap => loadingVoxels || lz4Chunks != null;
 
         public bool[] Subchunks
         {
@@ -97,6 +154,14 @@ namespace VoxelWorld
             {
                 WaitForVoxels();
                 return zSubchunks;
+            }
+        }
+        public byte[] LightCookieData
+        {
+            get
+            {
+                WaitForVoxels();
+                return lightCookieData;
             }
         }
 
@@ -133,126 +198,110 @@ namespace VoxelWorld
 
         public void LoadVoxels()
         {
-            byte[] outVoxels = null;
+            byte[][] outLZ4Chunks = null;
             bool[] outSubchunks = null;
             try
             {
-                // Compress uncompressed voxel files
-                /*if (!File.Exists(FilePath))
+                // Unzip voxel file
+                var br = new BinaryReader(new Ionic.Zlib.GZipStream(File.OpenRead(FilePath), Ionic.Zlib.CompressionMode.Decompress, Ionic.Zlib.CompressionLevel.BestCompression));
+
+                int width = xVoxels = br.ReadUInt16();
+                int height = yVoxels = br.ReadUInt16();
+                int depth = zVoxels = br.ReadUInt16();
+
+                int xChunks = (width + Preferences.chunkSize - 1) / Preferences.chunkSize;
+                int yChunks = (height + Preferences.chunkSize - 1) / Preferences.chunkSize;
+
+                VoxelWorld.LogThreaded($"Loading {width}x{height}x{depth} voxel map...");
+
+                displayOffset = new IntVector2(
+                    br.ReadInt16(),
+                    br.ReadInt16()
+                );
+
+                int scSize = Preferences.subchunkSize;
+
+                int scsWidth = xSubchunks = (width + scSize - 1) / scSize;
+                int scsHeight = ySubchunks = (height + scSize - 1) / scSize;
+                int scsDepth = zSubchunks = (depth + scSize - 1) / scSize;
+
+                // Load voxels
+                outLZ4Chunks = new byte[xChunks * yChunks][];
+                outSubchunks = new bool[scsWidth * scsHeight * scsDepth];
+
                 {
-                    using (var inFile = File.OpenRead(FilePath))
-                    using (var outGZip = new Ionic.Zlib.GZipStream(File.Create(FilePath), Ionic.Zlib.CompressionMode.Compress, Ionic.Zlib.CompressionLevel.BestCompression))
+                    byte[] rawChunk = new byte[Preferences.chunkSize * Preferences.chunkSize * 30];
+                    for (int chunkI = 0; chunkI < xChunks * yChunks; chunkI++)
                     {
-                        byte[] buffer = new byte[2000];
-                        int len;
-                        while ((len = inFile.Read(buffer, 0, 2000)) > 0)
+                        int chunkX = chunkI % xChunks;
+                        int chunkY = chunkI / xChunks;
+
+                        // Read LZ4 encoded voxels prefixed with data length
+                        int len = br.Read7BitEncodedInt();
+                        outLZ4Chunks[chunkI] = new byte[len];
+                        br.Read(outLZ4Chunks[chunkI], 0, len);
+
+                        // Decode temporarily to fill subchunks
+                        DecompressChunk(outLZ4Chunks[chunkI], rawChunk, width, height, chunkX, chunkY, out int chunkW, out int chunkH, out int chunkD);
+
+                        // Each subchunk is true if any voxels within it are solid
+                        int originX = chunkX * Preferences.chunkSize;
+                        int originY = chunkY * Preferences.chunkSize;
+                        int i = 0;
+                        for (int z = 0; z < chunkD; z++)
                         {
-                            outGZip.Write(buffer, 0, len);
-                        }
-                        outGZip.Flush();
-                    }
-                }*/
-
-
-                using (var br = new BinaryReader(new Ionic.Zlib.GZipStream(File.OpenRead(FilePath), Ionic.Zlib.CompressionMode.Decompress, Ionic.Zlib.CompressionLevel.BestCompression)))
-                {
-                    int width = xVoxels = br.ReadUInt16();
-                    int height = yVoxels = br.ReadUInt16();
-                    int depth = zVoxels = br.ReadUInt16();
-
-                    VoxelWorld.LogThreaded($"Loading {width}x{height}x{depth} voxel map...");
-
-                    displayOffset = new IntVector2(
-                        br.ReadInt16(),
-                        br.ReadInt16()
-                    );
-
-                    int repeatCount = 0;
-                    byte repeatVoxel = 0;
-
-                    int scSize = Preferences.subchunkSize;
-
-                    int scsWidth = xSubchunks = (width + scSize - 1) / scSize;
-                    int scsHeight = ySubchunks = (height + scSize - 1) / scSize;
-                    int scsDepth = zSubchunks = (depth + scSize - 1) / scSize;
-
-                    // Load voxels
-                    outVoxels = new byte[width * height * depth];
-                    outSubchunks = new bool[scsWidth * scsHeight * scsDepth];
-                    for (int z = 0; z < depth; z++)
-                    {
-                        int zOffset = z * width * height;
-                        int scZOffset = z / scSize * scsWidth * scsHeight;
-
-                        for (int y = 0; y < height; y++)
-                        {
-                            int yOffset = y * width;
-                            int scYOffset = y / scSize * scsWidth;
-
-                            for (int x = 0; x < width; x++)
+                            int scZOffset = z / scSize * scsWidth * scsHeight;
+                            for (int y = 0; y < chunkH; y++)
                             {
-                                byte voxel;
-
-                                if (repeatCount > 0)
+                                int scYOffset = (y + originY) / scSize * scsWidth;
+                                for (int x = 0; x < chunkW; x++)
                                 {
-                                    repeatCount--;
-                                    voxel = repeatVoxel;
+                                    if (rawChunk[i++] != 0)
+                                        outSubchunks[(x + originX) / scSize + scYOffset + scZOffset] = true;
                                 }
-                                else
-                                {
-                                    voxel = br.ReadByte();
-                                    if (voxel == 0xFF)
-                                    {
-                                        repeatVoxel = voxel = br.ReadByte();
-                                        repeatCount = br.Read7BitEncodedInt();
-                                        repeatCount--;
-                                    }
-                                    else
-                                    {
-                                        repeatVoxel = voxel;
-                                    }
-                                }
-
-                                if (voxel != 0)
-                                {
-                                    outSubchunks[x / scSize + scYOffset + scZOffset] = true;
-                                }
-
-                                outVoxels[x + yOffset + zOffset] = voxel;
-                            }
-                        }
-
-                        if (!loadingVoxels) break;
-                    }
-
-                    // Fill empty chunks with voxels that cause the raymarcher to quit early
-                    for (int z = 0; z < depth; z++)
-                    {
-                        int zOffset = z * width * height;
-                        int scZOffset = z / scSize * scsWidth * scsHeight;
-
-                        for (int y = 0; y < height; y++)
-                        {
-                            int yOffset = y * width;
-                            int scYOffset = y / scSize * scsWidth;
-
-                            for (int x = 0; x < width; x++)
-                            {
-                                if (!outSubchunks[x / scSize + scYOffset + scZOffset])
-                                    outVoxels[x + yOffset + zOffset] = 0x80;
                             }
                         }
                     }
-
                 }
 
+                // br is now at the start of the light image
+                try
+                {
+                    int imgLen = br.Read7BitEncodedInt();
+                    byte[] imgData = new byte[imgLen];
+                    br.Read(imgData, 0, imgLen);
+                    lightCookieData = imgData;
+                }
+                catch (Exception e)
+                {
+                    VoxelWorld.LogThreaded($"Couldn't find light image: {e}");
+                }
+
+                int full = 0;
+                int empty = 0;
+                foreach (var b in outSubchunks)
+                {
+                    if (b) full++;
+                    else empty++;
+                }
+                VoxelWorld.LogThreaded($"Loaded: {full} full subchunks, {empty} empty subchunks");
+
                 VoxelWorld.LogThreaded($"Successfully loaded voxel map: {room.abstractRoom.name}");
+
+                try
+                {
+                    br.Close();
+                }
+                catch(Exception e)
+                {
+                    VoxelWorld.LogThreaded(e);
+                }
             }
             catch (System.IO.IsolatedStorage.IsolatedStorageException) { }
             catch (Exception e)
             {
                 VoxelWorld.LogThreaded(new Exception("Failed to get voxel map!", e));
-                voxels = null;
+                lz4Chunks = null;
                 subchunks = null;
                 xVoxels = 0;
                 yVoxels = 0;
@@ -267,7 +316,7 @@ namespace VoxelWorld
                 if (loadingVoxels)
                 {
                     loadingVoxels = false;
-                    voxels = outVoxels;
+                    lz4Chunks = outLZ4Chunks;
                     subchunks = outSubchunks;
                 }
             }
@@ -278,8 +327,15 @@ namespace VoxelWorld
             x = Mathf.Clamp(x, 0, XVoxels - 1);
             y = Mathf.Clamp(y, 0, YVoxels - 1);
 
+            int chunkX = x / Preferences.chunkSize;
+            int chunkY = y / Preferences.chunkSize;
+
+            byte[] data = GetVoxelsCached(chunkX, chunkY, out int w, out int h, out int d);
+            x = Mathf.Clamp(x % Preferences.chunkSize, 0, w);
+            y = Mathf.Clamp(y % Preferences.chunkSize, 0, h);
+
             int z = 0;
-            while (z < ZVoxels && Voxels[x + y * XVoxels + z * XVoxels * YVoxels] == 0)
+            while (z < d && data[x + y * w + z * w * h] == 0)
                 z++;
             return z;
         }
@@ -298,7 +354,16 @@ namespace VoxelWorld
             x = Mathf.Clamp(x, 0, XVoxels - 1);
             y = Mathf.Clamp(y, 0, YVoxels - 1);
             z = Mathf.Clamp(z, 0, ZVoxels - 1);
-            return Voxels[x + y * XVoxels + z * XVoxels * YVoxels];
+
+            int chunkX = x / Preferences.chunkSize;
+            int chunkY = y / Preferences.chunkSize;
+
+            byte[] data = GetVoxelsCached(chunkX, chunkY, out int w, out int h, out int d);
+            x = Mathf.Clamp(x % Preferences.chunkSize, 0, w);
+            y = Mathf.Clamp(y % Preferences.chunkSize, 0, h);
+            z = Mathf.Clamp(z, 0, d);
+
+            return data[x + y * w + z * w * h];
         }
 
         public void Update()
@@ -309,7 +374,27 @@ namespace VoxelWorld
         {
             lock (syncRoot)
             {
-                voxels = null;
+                lz4Chunks = null;
+            }
+        }
+
+        private struct CachedChunk
+        {
+            public IntVector3 pos;
+            public int age;
+            public byte[] data;
+            public int width;
+            public int height;
+            public int depth;
+
+            public CachedChunk(IntVector3 pos, byte[] data, int width, int height, int depth)
+            {
+                this.pos = pos;
+                age = 0;
+                this.data = data;
+                this.width = width;
+                this.height = height;
+                this.depth = depth;
             }
         }
     }

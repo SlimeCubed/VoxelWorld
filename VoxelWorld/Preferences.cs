@@ -12,8 +12,9 @@ namespace VoxelWorld
         public static bool onlyLowQuality = false;
         public static int voxelSpriteLayer = 11;
         public static int lightCookieLayer = 12;
-        public static int chunkSize = 128;
+        public const int chunkSize = 128; // 128 is enforced by level format
         public static int subchunkSize = 8;
+        public static int maxCachedChunks = 64;
 
         // General rendering
         public static float playLayerDepth = 1f / 6f;

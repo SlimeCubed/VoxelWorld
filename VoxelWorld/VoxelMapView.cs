@@ -35,22 +35,24 @@ namespace VoxelWorld
                 }
             }
 
-            try
+            var lightCookieData = map.LightCookieData;
+            if(lightCookieData != null)
             {
-                var bytes = File.ReadAllBytes(VoxelWorld.GetRoomFilePath(map.room.abstractRoom.name, ".png"));
                 var tex = new Texture2D(1, 1, TextureFormat.DXT5, false);
                 tex.anisoLevel = 0;
                 tex.filterMode = FilterMode.Point;
                 tex.wrapMode = TextureWrapMode.Clamp;
-                tex.LoadImage(bytes);
+                tex.LoadImage(lightCookieData);
                 tex.Apply(false, true); // Make the texture non-readable, freeing memory
 
                 voxelLightCookie = tex;
+                VoxelWorld.LogThreaded($"Has {tex.width}x{tex.height} light cookie");
             }
-            catch
+            else
             {
                 // Don't add a light cookie if the file doesn't exist
                 voxelLightCookie = null;
+                VoxelWorld.LogThreaded("No light cookie");
             }
         }
 
@@ -295,28 +297,34 @@ namespace VoxelWorld
 
             public Vector2 WorldCenter => new Vector2((X + 0.5f) * size, (Y + 0.5f) * size) + Map.DisplayOffset.ToVector2() * 20f;
 
+            private static readonly byte[] voxelData = new byte[Preferences.chunkSize * Preferences.chunkSize * 30];
             private void CreateTexture(TextureQuality quality)
             {
                 DestroyTexture();
+
+                Map.GetVoxels(voxelData, X, Y, out int w, out int h, out int d);
+                var src = voxelData;
 
                 // Higher steps skip more voxels
                 int step = quality == TextureQuality.High ? 1 : 2;
 
                 // Determine bounds of useful voxel data
-                int xMin = size * X;
-                int yMin = size * Y;
+                int xMin = 0;
+                int yMin = 0;
                 int zMin = 0;
-                int xMax = size * (X + 1);
-                int yMax = size * (Y + 1);
-                int zMax = depth;
+
+#warning Collapsing texture bounds is disabled!
+                int xMax = 128;
+                int yMax = 128;
+                int zMax = 32;
 
                 if (quality == TextureQuality.High)
-                    CollapseBounds(ref xMin, ref yMin, ref zMin, ref xMax, ref yMax, ref zMax);
+                    CollapseBounds(src, ref xMin, ref yMin, ref zMin, ref xMax, ref yMax, ref zMax);
 
                 {
                     var bounds = new Bounds();
-                    var bMin = new Vector3(xMin - size * X, yMin - size * Y, zMin);
-                    var bMax = new Vector3(xMax - size * X, yMax - size * Y, zMax);
+                    var bMin = new Vector3(xMin, yMin, zMin);
+                    var bMax = new Vector3(xMax, yMax, zMax);
                     var scl = new Vector3(1f / size, 1f / size, 1f / depth);
                     bMin.Scale(scl);
                     bMax.Scale(scl);
@@ -342,25 +350,21 @@ namespace VoxelWorld
                 if (pixelBuffer == null)
                     pixelBuffer = new Color[size * size * depth];
 
-                var src = Map.Voxels;
                 var dst = pixelBuffer;
 
                 int i = 0;
 
-                int xVoxels = Map.XVoxels;
-                int yVoxels = Map.YVoxels;
-                int zVoxels = Map.ZVoxels;
-
+                
                 for (int z = zMin; z < zMax; z += step)
                 {
-                    int zOffset = z * xVoxels * yVoxels;
+                    int zOffset = z * w * h;
                     for (int y = yMin; y < yMax; y += step)
                     {
-                        int yOffset = y * xVoxels;
+                        int yOffset = y * w;
                         for (int x = xMin; x < xMax; x += step)
                         {
                             byte a;
-                            if (x < xVoxels && y < yVoxels && z < zVoxels)
+                            if (x < w && y < h && z < d)
                                 a = src[x + yOffset + zOffset];
                             else
                                 a = 0;
@@ -584,19 +588,23 @@ namespace VoxelWorld
                 TextureManager.EnqueueDeletion(Mesh);
             }
 
-            private void CollapseBounds(ref int xMin, ref int yMin, ref int zMin, ref int xMax, ref int yMax, ref int zMax)
+            private void CollapseBounds(byte[] voxels, ref int xMin, ref int yMin, ref int zMin, ref int xMax, ref int yMax, ref int zMax)
             {
-                var voxels = Map.Voxels;
-
-                int txMin = Math.Max(xMin, 0);
-                int tyMin = Math.Max(yMin, 0);
-                int tzMin = Math.Max(zMin, 0);
-                int txMax = Math.Min(xMax, Map.XVoxels);
-                int tyMax = Math.Min(yMax, Map.YVoxels);
-                int tzMax = Math.Min(zMax, Map.ZVoxels);
+                int txMin = xMin;
+                int tyMin = yMin;
+                int tzMin = zMin;
+                int txMax = xMax;
+                int tyMax = yMax;
+                int tzMax = zMax;
 
                 int xVoxels = Map.XVoxels;
                 int yVoxels = Map.YVoxels;
+
+#warning Collapsing texture bounds is disabled!
+                xMax = 128;
+                yMax = 128;
+                zMax = 32;
+                return;
 
                 bool XSliceEquals(int srcX, int dstX)
                 {
@@ -667,17 +675,15 @@ namespace VoxelWorld
                 while (ZSliceEquals(tzMax - 1, tzMax - 2)) tzMax--;
 
                 // Ensure size is a power of 2 in each dimension
-                void IncreaseToPowerOfTwo(ref int min, ref int max, int upperBound)
+                // This may add some padding to the top right
+                void IncreaseToPowerOfTwo(ref int min, ref int max)
                 {
                     max = Mathf.NextPowerOfTwo(max - min) + min;
-                    int shift = Math.Min(0, upperBound - max);
-                    min += shift;
-                    max += shift;
                 }
 
-                IncreaseToPowerOfTwo(ref txMin, ref txMax, xMax);
-                IncreaseToPowerOfTwo(ref tyMin, ref tyMax, yMax);
-                IncreaseToPowerOfTwo(ref tzMin, ref tzMax, zMax);
+                IncreaseToPowerOfTwo(ref txMin, ref txMax);
+                IncreaseToPowerOfTwo(ref tyMin, ref tyMax);
+                IncreaseToPowerOfTwo(ref tzMin, ref tzMax);
 
                 xMin = txMin;
                 yMin = tyMin;

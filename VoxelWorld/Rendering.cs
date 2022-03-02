@@ -77,8 +77,6 @@ namespace VoxelWorld
 
             if (map?.HasVoxelMap ?? false)
             {
-                var voxels = map.Voxels;
-
                 for (int x = 0; x < self.sprites.GetLength(0); x++)
                 {
                     for (int y = 0; y < self.sprites.GetLength(1); y++)
