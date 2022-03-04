@@ -61,7 +61,7 @@ namespace VoxelWorld {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 15.0KB
+        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 14.7KB
         ///
         ///Shader &quot;Futile/Decal&quot; {
         ///Properties {
@@ -72,7 +72,7 @@ namespace VoxelWorld {
         ///
         ///
         /// // Stats for Vertex shader:
-        /// //       d3d11 : 9 math
+        /// //       d3d11 : 7 math
         /// // Stats for Fragment shader:
         /// //       d3d11 : 133 math, 11 texture, 9 branch
         /// Pass {
@@ -87,7 +87,7 @@ namespace VoxelWorld {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 8.6KB
+        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 8.4KB
         ///
         ///Shader &quot;Futile/Fog&quot; {
         ///Properties {
@@ -98,7 +98,7 @@ namespace VoxelWorld {
         ///
         ///
         /// // Stats for Vertex shader:
-        /// //       d3d11 : 9 math
+        /// //       d3d11 : 7 math
         /// // Stats for Fragment shader:
         /// //       d3d11 : 60 math, 6 texture, 4 branch
         /// Pass {
@@ -140,41 +140,9 @@ namespace VoxelWorld {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 9.8KB
+        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 9.9KB
         ///
         ///Shader &quot;Futile/VoxelChunk&quot; {
-        ///Properties {
-        /// _MainTex (&quot;Voxels&quot;, 3D) = &quot;white&quot; {}
-        ///}
-        ///SubShader { 
-        /// LOD 100
-        /// Tags { &quot;QUEUE&quot;=&quot;Geometry&quot; &quot;RenderType&quot;=&quot;Voxels&quot; }
-        ///
-        ///
-        /// // Stats for Vertex shader:
-        /// //       d3d11 : 10 math
-        /// // Stats for Fragment shader:
-        /// //       d3d11 : 85 math, 3 branch
-        /// Pass {
-        ///  Tags { &quot;QUEUE&quot;=&quot;Geometry&quot; &quot;RenderType&quot;=&quot;Voxels&quot; }
-        ///  ZTest Less
-        ///Program &quot;vp&quot; {
-        ///SubProgram &quot;d3d11 &quot; {
-        ///// Stats: 10 math
-        ///Bind &quot;vertex&quot; Vertex
-        ///Bind &quot;color&quot; Color
-        ///C [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string VoxelChunk {
-            get {
-                return ResourceManager.GetString("VoxelChunk", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 9.1KB
-        ///
-        ///Shader &quot;Futile/VoxelDepth&quot; {
         ///Properties {
         /// _MainTex (&quot;Voxels&quot;, 3D) = &quot;white&quot; {}
         ///}
@@ -186,7 +154,7 @@ namespace VoxelWorld {
         /// // Stats for Vertex shader:
         /// //       d3d11 : 10 math
         /// // Stats for Fragment shader:
-        /// //       d3d11 : 50 math, 3 branch
+        /// //       d3d11 : 83 math, 3 branch
         /// Pass {
         ///  Tags { &quot;QUEUE&quot;=&quot;AlphaTest&quot; &quot;RenderType&quot;=&quot;Voxels&quot; }
         ///  ZTest Less
@@ -196,6 +164,36 @@ namespace VoxelWorld {
         ///Bind &quot;vertex&quot; Vertex
         ///Bind &quot;color&quot; Color [rest of string was truncated]&quot;;.
         /// </summary>
+        internal static string VoxelChunk {
+            get {
+                return ResourceManager.GetString("VoxelChunk", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 11.6KB
+        ///
+        ///Shader &quot;Futile/VoxelDepth&quot; {
+        ///SubShader { 
+        /// LOD 100
+        /// Tags { &quot;QUEUE&quot;=&quot;AlphaTest&quot; &quot;RenderType&quot;=&quot;Voxels&quot; }
+        ///
+        ///
+        /// // Stats for Vertex shader:
+        /// //       d3d11 : 10 math
+        /// // Stats for Fragment shader:
+        /// //       d3d11 : 49 math, 3 branch
+        /// Pass {
+        ///  Tags { &quot;QUEUE&quot;=&quot;AlphaTest&quot; &quot;RenderType&quot;=&quot;Voxels&quot; }
+        ///  ZTest Less
+        ///Program &quot;vp&quot; {
+        ///SubProgram &quot;d3d11 &quot; {
+        ///// Stats: 10 math
+        ///Bind &quot;vertex&quot; Vertex
+        ///Bind &quot;color&quot; Color
+        ///ConstBuffer &quot;UnityPerCamera&quot; 128
+        ///Vector 64 [_WorldS [rest of string was truncated]&quot;;.
+        /// </summary>
         internal static string VoxelDepth {
             get {
                 return ResourceManager.GetString("VoxelDepth", resourceCulture);
@@ -203,33 +201,7 @@ namespace VoxelWorld {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 34.0KB
-        ///
-        ///Shader &quot;Futile/VoxelLevelColor&quot; {
-        ///Properties {
-        /// _MainTex (&quot;Base (RGB) Trans (A)&quot;, 3D) = &quot;white&quot; {}
-        ///}
-        ///SubShader { 
-        /// Tags { &quot;QUEUE&quot;=&quot;Transparent&quot; &quot;IGNOREPROJECTOR&quot;=&quot;true&quot; &quot;RenderType&quot;=&quot;Transparent&quot; }
-        ///
-        ///
-        /// // Stats for Vertex shader:
-        /// //       d3d11 : 8 math
-        /// //        d3d9 : 9 math
-        /// //       gles3 : 38 math, 1 texture, 5 branch
-        /// //       metal : 2 math
-        /// //      opengl : 38 math, 1 texture, 5 branch
-        /// // Stats for Fragment shader:
-        /// //       d3d11 :  [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string VoxelLevelColor {
-            get {
-                return ResourceManager.GetString("VoxelLevelColor", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 2.5KB
+        ///   Looks up a localized string similar to // Compiled shader for all platforms, uncompressed size: 2.3KB
         ///
         ///Shader &quot;Custom/VoxelLightCookie&quot; {
         ///Properties {
@@ -237,22 +209,21 @@ namespace VoxelWorld {
         ///}
         ///SubShader { 
         /// LOD 200
-        /// Tags { &quot;RenderType&quot;=&quot;AlphaTest&quot; }
+        /// Tags { &quot;QUEUE&quot;=&quot;AlphaTest&quot; &quot;RenderType&quot;=&quot;VoxelLightCookie&quot; }
         ///
         ///
         /// // Stats for Vertex shader:
         /// //       d3d11 : 5 math
-        /// // Stats for Fragment shader:
-        /// //       d3d11 : 2 math
         /// Pass {
-        ///  Tags { &quot;RenderType&quot;=&quot;AlphaTest&quot; }
+        ///  Tags { &quot;QUEUE&quot;=&quot;AlphaTest&quot; &quot;RenderType&quot;=&quot;VoxelLightCookie&quot; }
         ///  ZTest Always
+        ///  Cull Off
         ///Program &quot;vp&quot; {
         ///SubProgram &quot;d3d11 &quot; {
         ///// Stats: 5 math
+        ///Bind &quot;vertex&quot; Vertex
         ///Bind &quot;texcoord&quot; TexCoord0
-        ///ConstBuffer &quot;$Globals&quot; 32
-        ///Vector 16 [_MainTex_ST [rest of string was truncated]&quot;;.
+        ///ConstBuffer &quot;$Glob [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string VoxelLightCookie {
             get {

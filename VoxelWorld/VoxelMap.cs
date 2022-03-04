@@ -20,6 +20,7 @@ namespace VoxelWorld
         private static CachedChunk[] chunkCache;
         private static Dictionary<IntVector3, int> chunkCacheIndices = new Dictionary<IntVector3, int>();
         private static int cacheAge;
+        private static int totalGetVoxels;
 
         private int xVoxels;
         private int yVoxels;
@@ -39,6 +40,8 @@ namespace VoxelWorld
         }
         public byte[] GetVoxelsCached(int chunkX, int chunkY, out int width, out int height, out int depth)
         {
+            totalGetVoxels++;
+
             if(chunkCache == null || chunkCache.Length != Preferences.maxCachedChunks)
             {
                 chunkCache = new CachedChunk[Preferences.maxCachedChunks];
@@ -57,12 +60,15 @@ namespace VoxelWorld
                         index = i;
                 }
 
+                var oldKey = chunkCache[index].pos;
                 chunkCacheIndices.Remove(chunkCache[index].pos);
                 chunkCacheIndices[key] = index;
 
                 var buffer = chunkCache[index].data ?? new byte[Preferences.chunkSize * Preferences.chunkSize * 30];
                 GetVoxels(buffer, chunkX, chunkY, out width, out height, out depth);
                 chunkCache[index] = new CachedChunk(key, buffer, width, height, depth);
+
+                //Debug.Log($"Read {totalGetVoxels} ({cacheAge}): ({key.x},{key.y},{key.z}) -> Slot {index}, replacing ({oldKey.x},{oldKey.y},{oldKey.z})");
             }
             else
             {
@@ -268,9 +274,12 @@ namespace VoxelWorld
                 try
                 {
                     int imgLen = br.Read7BitEncodedInt();
-                    byte[] imgData = new byte[imgLen];
-                    br.Read(imgData, 0, imgLen);
-                    lightCookieData = imgData;
+                    if (imgLen > 0)
+                    {
+                        byte[] imgData = new byte[imgLen];
+                        br.Read(imgData, 0, imgLen);
+                        lightCookieData = imgData;
+                    }
                 }
                 catch (Exception e)
                 {

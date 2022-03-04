@@ -110,9 +110,6 @@
     <None Include="Resources\VoxelSimple.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\VoxelLevelColor.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Resources\VoxelChunk.txt" />
   </ItemGroup>
   <ItemGroup>

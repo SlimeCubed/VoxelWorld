@@ -27,7 +27,6 @@ namespace VoxelWorld
                 On.RainWorld.Start += RainWorld_Start;
 
                 Rendering.Enable();
-                ShaderFixes.Enable();
                 CameraScroll.Enable();
                 Diag.Enable();
             }
@@ -42,7 +41,11 @@ namespace VoxelWorld
 
         public void Update()
         {
-            lock(threadedLogs)
+            // Apply late to overwrite Sharpener's shaders
+            ShaderFixes.Apply();
+
+            // The default log handler ignores messages from other threads
+            lock (threadedLogs)
             {
                 foreach(var tl in threadedLogs)
                 {

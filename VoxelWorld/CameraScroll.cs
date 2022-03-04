@@ -13,6 +13,7 @@ namespace VoxelWorld
     internal static class CameraScroll
     {
         private static readonly Dictionary<RoomCamera, CameraController> controllers = new Dictionary<RoomCamera, CameraController>();
+        private static bool allPointsViewed;
 
         public static void Enable()
         {
@@ -206,6 +207,42 @@ namespace VoxelWorld
                         visible = true;
                 }
                 return visible;
+            };
+
+            // Fix wormgrass culling
+            On.WormGrass.Update += (orig, self, eu) =>
+            {
+                var worm = (WormGrass)self;
+                bool scrollMode = false;
+
+                for (int camIndex = 0; camIndex < self.room.game.cameras.Length; camIndex++)
+                {
+                    var cam = self.room.game.cameras[camIndex];
+
+                    if (controllers.TryGetValue(cam, out var controller) && controller.Active)
+                        scrollMode = true;
+                }
+
+                if (scrollMode)
+                {
+                    allPointsViewed = true;
+
+                    // Only refresh worms on camera room change
+                    for (int camIndex = 0; camIndex < self.room.game.cameras.Length; camIndex++)
+                    {
+                        if (worm.cameraPositions[camIndex, 0] == worm.room.game.cameras[camIndex].room.abstractRoom.index)
+                        {
+                            worm.cameraPositions[camIndex, 1] = worm.room.game.cameras[camIndex].currentCameraPosition;
+                        }
+                    }
+                }
+                orig(self, eu);
+                allPointsViewed = false;
+            };
+
+            On.Room.ViewedByAnyCamera += (orig, self, pos, margin) =>
+            {
+                return orig(self, pos, allPointsViewed ? float.PositiveInfinity : margin);
             };
         }
 

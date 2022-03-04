@@ -2,7 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Reflection;
+using System.Reflection.Emit;
 using UnityEngine;
+using BepInEx;
+using RWCustom;
 
 namespace VoxelWorld
 {
@@ -11,7 +15,12 @@ namespace VoxelWorld
         private static VoxelCamera rtCam;
         private static RenderTexture rt;
         private static bool renderingVoxels;
+        private static bool fullShadow;
         private static RoomPos renderingCamPos;
+        private const int levelTexWidth = 1400;
+        private const int levelTexHeight = 800;
+
+        private static Func<IntVector2> getSharpenerRes;
 
         public static void Enable()
         {
@@ -20,6 +29,37 @@ namespace VoxelWorld
             On.ShortcutGraphics.GenerateSprites += ShortcutGraphics_GenerateSprites;
             On.RoomCamera.DepthAtCoordinate += RoomCamera_DepthAtCoordinate;
             On.RoomCamera.PixelColorAtCoordinate += RoomCamera_PixelColorAtCoordinate;
+
+            int doomCounters = 0;
+            On.RainWorld.Update += (orig, self) =>
+            {
+                orig(self);
+                if (doomCounters++ == 60 * 5)
+                {
+                    try
+                    {
+                        FindSharpener();
+                    }
+                    catch(Exception e) { Debug.LogException(e); }
+                }
+            };
+        }
+
+        private static void FindSharpener()
+        {
+            Type modType = Type.GetType("Sharpener.SharpenerMod, Sharpener");
+            var inst = (BaseUnityPlugin)UnityEngine.Object.FindObjectOfType(modType);
+
+            var _realRes = modType.GetField("_realRes", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+            var get_realRes_DM = new DynamicMethod("voxelworld_get_realRes", typeof(IntVector2), new Type[] { modType }, modType);
+            var ilg = get_realRes_DM.GetILGenerator();
+
+            ilg.Emit(OpCodes.Ldarg_0);
+            ilg.Emit(OpCodes.Ldfld, _realRes);
+            ilg.Emit(OpCodes.Ret);
+
+            getSharpenerRes = (Func<IntVector2>)get_realRes_DM.CreateDelegate(typeof(Func<IntVector2>), inst);
         }
 
         private static Color RoomCamera_PixelColorAtCoordinate(On.RoomCamera.orig_PixelColorAtCoordinate orig, RoomCamera self, Vector2 coord)
@@ -160,6 +200,7 @@ namespace VoxelWorld
             }
             renderingVoxels = nowRenderingVoxels;
             renderingCamPos = new RoomPos(self.room, Vector2.Lerp(self.lastPos, self.pos, timeStacker));
+            fullShadow = vm?.LightCookieData == null;
 
             if (nowRenderingVoxels)
             {
@@ -172,7 +213,7 @@ namespace VoxelWorld
         {
             orig(self, futileParams);
 
-            rt = new RenderTexture(1400, 800, 16, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            rt = new RenderTexture(levelTexWidth, levelTexHeight, 16, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             rt.anisoLevel = 0;
             rt.generateMips = false;
             rt.wrapMode = TextureWrapMode.Clamp;
@@ -229,7 +270,7 @@ namespace VoxelWorld
                 Cam.transform.position = Cam.transform.parent.position + new Vector3(0f, 0f, -Preferences.cameraDepth);
                 Cam.transform.localRotation = Quaternion.Euler(0f, 0f, 180f);
                 Cam.orthographic = false;
-                Cam.fieldOfView = 2f * Mathf.Rad2Deg * Mathf.Atan2(Cam.pixelHeight / 2f, Cam.transform.localPosition.z);
+                Cam.fieldOfView = 2f * Mathf.Rad2Deg * Mathf.Atan2(levelTexHeight / 2f, Cam.transform.localPosition.z);
                 Cam.nearClipPlane = Preferences.cameraDepth * 0.05f;
                 Cam.farClipPlane = Preferences.cameraDepth * 5f;
                 Cam.depth = SrcCam.depth - 1f;
@@ -255,7 +296,7 @@ namespace VoxelWorld
 
                 // The projection matrix approximates a cube
                 // It must always cover the visible portion of the level
-                float cubeSize = Mathf.Max(Cam.pixelWidth, Cam.pixelHeight) * Preferences.shadowMapScale;
+                float cubeSize = Mathf.Max(levelTexWidth, levelTexHeight) * Preferences.shadowMapScale;
 
                 lightCam.nearClipPlane = Preferences.sunDistance - cubeSize / 2f;
                 lightCam.farClipPlane = Preferences.sunDistance + cubeSize / 2f;
@@ -263,7 +304,12 @@ namespace VoxelWorld
                 
                 lightCam.SetReplacementShader(voxelDepth, "RenderType");
                 lightCam.depth = -1000f;
-                lightCam.cullingMask = 1 << Preferences.voxelSpriteLayer | 1 << Preferences.lightCookieLayer;
+
+                lightCam.backgroundColor = fullShadow ? Color.black : Color.clear;
+                if (fullShadow)
+                    lightCam.cullingMask = 0;
+                else
+                    lightCam.cullingMask = 1 << Preferences.voxelSpriteLayer | 1 << Preferences.lightCookieLayer;
 
                 if (Preferences.viewShadowMap)
                 {
@@ -291,7 +337,7 @@ namespace VoxelWorld
                 camPos.w = 1f;
                 camPos.z = -Preferences.cameraDepth;
                 Matrix4x4 viewProjMatrix =
-                    Matrix4x4.Perspective(2f * Mathf.Rad2Deg * Mathf.Atan2(Cam.pixelHeight / 2f, -camPos.z), Cam.aspect, Preferences.cameraDepth * 0.01f, Preferences.cameraDepth * 2f)
+                    Matrix4x4.Perspective(2f * Mathf.Rad2Deg * Mathf.Atan2(levelTexHeight / 2f, -camPos.z), Cam.aspect, Preferences.cameraDepth * 0.01f, Preferences.cameraDepth * 2f)
                     * Matrix4x4.TRS(new Vector3(-camPos.x, -camPos.y, camPos.z + Preferences.chunkSize * Preferences.playLayerDepth), Quaternion.Inverse(transform.rotation), new Vector3(1f, 1f, -1f));
 
                 Shader.SetGlobalVector("_SimulateCameraPos", camPos);
@@ -300,6 +346,17 @@ namespace VoxelWorld
 
             public void OnPreCull()
             {
+                int height = getSharpenerRes?.Invoke().y ?? 768;
+                height = (height > 0 ? height : 768) * levelTexHeight / 768;
+
+                if (rt.height != height)
+                {
+                    rt.Release();
+                    rt.height = height;
+                    rt.width = height * levelTexWidth / levelTexHeight;
+                    Debug.Log($"Updated voxel level texture: {rt.width}x{rt.height}");
+                }
+
                 // Copy render params from the main camera, but only render voxels
                 Cam.targetTexture = rt;
                 Cam.backgroundColor = Color.white;

@@ -1,4 +1,4 @@
-// Compiled shader for all platforms, uncompressed size: 8.6KB
+// Compiled shader for all platforms, uncompressed size: 8.4KB
 
 Shader "Futile/Fog" {
 Properties {
@@ -9,7 +9,7 @@ SubShader {
 
 
  // Stats for Vertex shader:
- //       d3d11 : 9 math
+ //       d3d11 : 7 math
  // Stats for Fragment shader:
  //       d3d11 : 60 math, 6 texture, 4 branch
  Pass {
@@ -27,21 +27,18 @@ SubShader {
   Blend SrcAlpha OneMinusSrcAlpha
 Program "vp" {
 SubProgram "d3d11 " {
-// Stats: 9 math
+// Stats: 7 math
 Bind "vertex" Vertex
 Bind "color" Color
 Bind "texcoord" TexCoord0
 ConstBuffer "$Globals" 96
 Vector 80 [_MainTex_ST]
-ConstBuffer "UnityPerCamera" 128
-Vector 80 [_ProjectionParams]
 ConstBuffer "UnityPerDraw" 336
 Matrix 0 [glstate_matrix_mvp]
 BindCB  "$Globals" 0
-BindCB  "UnityPerCamera" 1
-BindCB  "UnityPerDraw" 2
+BindCB  "UnityPerDraw" 1
 "vs_4_0
-eefiecedlllcakgjgclnjjikboddjnbelblocepbabaaaaaajaadaaaaadaaaaaa
+eefiecedkioagoejkaaojogofkbibfacjaabnikgabaaaaaaeeadaaaaadaaaaaa
 cmaaaaaapeaaaaaaiaabaaaaejfdeheomaaaaaaaagaaaaaaaiaaaaaajiaaaaaa
 aaaaaaaaaaaaaaaaadaaaaaaaaaaaaaaapapaaaakbaaaaaaaaaaaaaaaaaaaaaa
 adaaaaaaabaaaaaaapaaaaaakjaaaaaaaaaaaaaaaaaaaaaaadaaaaaaacaaaaaa
@@ -53,23 +50,21 @@ aiaaaaaagiaaaaaaaaaaaaaaabaaaaaaadaaaaaaaaaaaaaaapaaaaaaheaaaaaa
 aaaaaaaaaaaaaaaaadaaaaaaabaaaaaaadamaaaaheaaaaaaabaaaaaaaaaaaaaa
 adaaaaaaabaaaaaaamadaaaahnaaaaaaaaaaaaaaaaaaaaaaadaaaaaaacaaaaaa
 apaaaaaafdfgfpfaepfdejfeejepeoaafeeffiedepepfceeaaedepemepfcaakl
-fdeieefcaiacaaaaeaaaabaaicaaaaaafjaaaaaeegiocaaaaaaaaaaaagaaaaaa
-fjaaaaaeegiocaaaabaaaaaaagaaaaaafjaaaaaeegiocaaaacaaaaaaaeaaaaaa
-fpaaaaadpcbabaaaaaaaaaaafpaaaaaddcbabaaaadaaaaaafpaaaaadpcbabaaa
-afaaaaaaghaaaaaepccabaaaaaaaaaaaabaaaaaagfaaaaaddccabaaaabaaaaaa
-gfaaaaadmccabaaaabaaaaaagfaaaaadpccabaaaacaaaaaagiaaaaacabaaaaaa
-diaaaaaipcaabaaaaaaaaaaafgbfbaaaaaaaaaaaegiocaaaacaaaaaaabaaaaaa
-dcaaaaakpcaabaaaaaaaaaaaegiocaaaacaaaaaaaaaaaaaaagbabaaaaaaaaaaa
-egaobaaaaaaaaaaadcaaaaakpcaabaaaaaaaaaaaegiocaaaacaaaaaaacaaaaaa
-kgbkbaaaaaaaaaaaegaobaaaaaaaaaaadcaaaaakpcaabaaaaaaaaaaaegiocaaa
-acaaaaaaadaaaaaapgbpbaaaaaaaaaaaegaobaaaaaaaaaaadgaaaaafpccabaaa
-aaaaaaaaegaobaaaaaaaaaaadiaaaaaiccaabaaaaaaaaaaabkaabaaaaaaaaaaa
-akiacaaaabaaaaaaafaaaaaadiaaaaakfcaabaaaaaaaaaaaagadbaaaaaaaaaaa
-aceaaaaaaaaaaadpaaaaaaaaaaaaaadpaaaaaaaadiaaaaahicaabaaaaaaaaaaa
-bkaabaaaaaaaaaaaabeaaaaaaaaaaadpaaaaaaahmccabaaaabaaaaaakgakbaaa
-aaaaaaaaagambaaaaaaaaaaadcaaaaaldccabaaaabaaaaaaegbabaaaadaaaaaa
-egiacaaaaaaaaaaaafaaaaaaogikcaaaaaaaaaaaafaaaaaadgaaaaafpccabaaa
-acaaaaaaegbobaaaafaaaaaadoaaaaab"
+fdeieefclmabaaaaeaaaabaagpaaaaaafjaaaaaeegiocaaaaaaaaaaaagaaaaaa
+fjaaaaaeegiocaaaabaaaaaaaeaaaaaafpaaaaadpcbabaaaaaaaaaaafpaaaaad
+dcbabaaaadaaaaaafpaaaaadpcbabaaaafaaaaaaghaaaaaepccabaaaaaaaaaaa
+abaaaaaagfaaaaaddccabaaaabaaaaaagfaaaaadmccabaaaabaaaaaagfaaaaad
+pccabaaaacaaaaaagiaaaaacabaaaaaadiaaaaaipcaabaaaaaaaaaaafgbfbaaa
+aaaaaaaaegiocaaaabaaaaaaabaaaaaadcaaaaakpcaabaaaaaaaaaaaegiocaaa
+abaaaaaaaaaaaaaaagbabaaaaaaaaaaaegaobaaaaaaaaaaadcaaaaakpcaabaaa
+aaaaaaaaegiocaaaabaaaaaaacaaaaaakgbkbaaaaaaaaaaaegaobaaaaaaaaaaa
+dcaaaaakpcaabaaaaaaaaaaaegiocaaaabaaaaaaadaaaaaapgbpbaaaaaaaaaaa
+egaobaaaaaaaaaaadgaaaaafpccabaaaaaaaaaaaegaobaaaaaaaaaaadiaaaaak
+hcaabaaaaaaaaaaaegadbaaaaaaaaaaaaceaaaaaaaaaaadpaaaaaadpaaaaaadp
+aaaaaaaaaaaaaaahmccabaaaabaaaaaakgakbaaaaaaaaaaaagaebaaaaaaaaaaa
+dcaaaaaldccabaaaabaaaaaaegbabaaaadaaaaaaegiacaaaaaaaaaaaafaaaaaa
+ogikcaaaaaaaaaaaafaaaaaadgaaaaafpccabaaaacaaaaaaegbobaaaafaaaaaa
+doaaaaab"
 }
 }
 Program "fp" {
