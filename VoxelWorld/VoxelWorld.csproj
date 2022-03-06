@@ -49,8 +49,8 @@
     <Reference Include="Ionic.Zlib, Version=1.9.1.5, Culture=neutral, PublicKeyToken=edbe51ad942a3f5c, processorArchitecture=MSIL">
       <HintPath>..\packages\Ionic.Zlib.1.9.1.5\lib\Ionic.Zlib.dll</HintPath>
     </Reference>
-    <Reference Include="LZ4, Version=1.0.15.93, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\lz4net.1.0.15.93\lib\net2\LZ4.dll</HintPath>
+    <Reference Include="LZ4pn">
+      <HintPath>..\References\LZ4pn.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil">
       <HintPath>..\..\rwbeplibs\Mono.Cecil.dll</HintPath>
@@ -132,7 +132,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"$(ILMergeConsolePath)" /targetplatform:v2 /lib:"%25RWLibs%25" /ndebug /out:SeamlessLevels.dll $(TargetFileName) Ionic.Zlib.dll LZ4.dll
+    <PostBuildEvent>"$(ILMergeConsolePath)" /targetplatform:v2 /lib:"%25RWLibs%25" /ndebug /out:SeamlessLevels.dll $(TargetFileName) LZ4pn.dll Ionic.Zlib.dll
 if defined RWMods (copy /Y "SeamlessLevels.dll" "%25RWMods%25")</PostBuildEvent>
   </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

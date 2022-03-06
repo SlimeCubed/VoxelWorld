@@ -4,7 +4,7 @@ using System.IO;
 using System.Collections.Generic;
 using RWCustom;
 using UnityEngine;
-using LZ4;
+using LZ4pn;
 
 namespace VoxelWorld
 {
@@ -90,7 +90,7 @@ namespace VoxelWorld
             height = Math.Min(yVoxels - chunkY * Preferences.chunkSize, Preferences.chunkSize);
             depth = 30;
 
-            LZ4Codec.Decode(lz4Data, 0, lz4Data.Length, buffer, 0, width * height * depth, true);
+            LZ4Codec.Decode32(lz4Data, 0, lz4Data.Length, buffer, 0, width * height * depth, true);
         }
 
         public int XVoxels
