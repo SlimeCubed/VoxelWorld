@@ -30,18 +30,10 @@ namespace VoxelWorld
             On.RoomCamera.DepthAtCoordinate += RoomCamera_DepthAtCoordinate;
             On.RoomCamera.PixelColorAtCoordinate += RoomCamera_PixelColorAtCoordinate;
 
-            int doomCounters = 0;
-            On.RainWorld.Update += (orig, self) =>
+            On.RainWorld.Start += (orig, self) =>
             {
                 orig(self);
-                if (doomCounters++ == 60 * 5)
-                {
-                    try
-                    {
-                        FindSharpener();
-                    }
-                    catch(Exception e) { Debug.LogException(e); }
-                }
+                FindSharpener();
             };
         }
 
