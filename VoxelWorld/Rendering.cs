@@ -20,7 +20,7 @@ namespace VoxelWorld
         private const int levelTexWidth = 1400;
         private const int levelTexHeight = 800;
 
-        private static Func<IntVector2> getSharpenerRes;
+        private static Func<IntVector2?> getSharpenerRes;
 
         public static void Enable()
         {
@@ -36,22 +36,39 @@ namespace VoxelWorld
                 FindSharpener();
             };
         }
-
+        
         private static void FindSharpener()
         {
             Type modType = Type.GetType("Sharpener.SharpenerMod, Sharpener");
             var inst = (BaseUnityPlugin)UnityEngine.Object.FindObjectOfType(modType);
 
             var _realRes = modType.GetField("_realRes", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var Mode = modType.GetProperty("Mode", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetGetMethod(true);
 
-            var get_realRes_DM = new DynamicMethod("voxelworld_get_realRes", typeof(IntVector2), new Type[] { modType }, modType);
+            var get_realRes_DM = new DynamicMethod("voxelworld_get_realRes", typeof(IntVector2?), new Type[] { modType }, modType);
             var ilg = get_realRes_DM.GetILGenerator();
 
+            var label = ilg.DefineLabel();
+            ilg.Emit(OpCodes.Ldarg_0);
+            ilg.Emit(OpCodes.Call, Mode);
+            ilg.Emit(OpCodes.Ldc_I4_2);
+            // Check mode sharpener is on.
+            ilg.Emit(OpCodes.Beq_S, label);
+            // Non-native mode, use normal res.
+            var loc = ilg.DeclareLocal(typeof(IntVector2?));
+            ilg.Emit(OpCodes.Ldloca_S, loc);
+            ilg.Emit(OpCodes.Initobj, typeof(IntVector2?));
+            ilg.Emit(OpCodes.Ldloc_S, loc);
+            ilg.Emit(OpCodes.Ret);
+            ilg.MarkLabel(label);
+            // Native mode, get real res.
             ilg.Emit(OpCodes.Ldarg_0);
             ilg.Emit(OpCodes.Ldfld, _realRes);
+            ilg.Emit(OpCodes.Newobj, typeof(IntVector2?).GetConstructor(new []{typeof(IntVector2)}));
             ilg.Emit(OpCodes.Ret);
-
-            getSharpenerRes = (Func<IntVector2>)get_realRes_DM.CreateDelegate(typeof(Func<IntVector2>), inst);
+            
+            getSharpenerRes = (Func<IntVector2?>)get_realRes_DM.CreateDelegate(typeof(Func<IntVector2?>), inst);
         }
 
         private static Color RoomCamera_PixelColorAtCoordinate(On.RoomCamera.orig_PixelColorAtCoordinate orig, RoomCamera self, Vector2 coord)
@@ -273,6 +290,7 @@ namespace VoxelWorld
             // Camera used for shadowmapping
             public void UpdateLightCamera()
             {
+                return;
                 bool dirty = ((renderingCamPos.Distance(shadowPos) > 20f) || Input.GetKey(KeyCode.Alpha6) || Input.GetKeyUp(KeyCode.Alpha6)) && renderingVoxels;
 
                 // Draw shadow map directly to screen when a keybind is pressed
@@ -351,7 +369,7 @@ namespace VoxelWorld
 
             public void OnPreCull()
             {
-                int height = getSharpenerRes?.Invoke().y ?? 768;
+                int height = getSharpenerRes?.Invoke()?.y ?? 768;
                 height = (height > 0 ? height : 768) * levelTexHeight / 768;
 
                 if (rt.height != height)
