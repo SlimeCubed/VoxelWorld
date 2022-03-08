@@ -1,8 +1,8 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace VoxelWorld
 {
@@ -246,15 +246,14 @@ namespace VoxelWorld
         internal class VoxelChunk
         {
             public static int size = Preferences.chunkSize;
-            public static int depth = 32;
+            public static int depth = Preferences.chunkDepth;
             private const TextureFormat texFormat = TextureFormat.Alpha8;
-            private static Color[] pixelBuffer;
 
             public VoxelMap Map { get; }
             public int X { get; }
             public int Y { get; }
-            public Texture3D Texture { get; private set; }
-            public Bounds VoxelBounds { get; private set; }
+            public Texture3D Texture { get; set; }
+            public Bounds VoxelBounds { get; set; }
             public Mesh Mesh { get; private set; }
             public TextureQuality Quality
             {
@@ -271,6 +270,7 @@ namespace VoxelWorld
                         }
                         else
                         {
+                            
                             CreateTexture(value);
                             CreateMesh();
                         }
@@ -297,86 +297,10 @@ namespace VoxelWorld
 
             public Vector2 WorldCenter => new Vector2((X + 0.5f) * size, (Y + 0.5f) * size) + Map.DisplayOffset.ToVector2() * 20f;
 
-            private static readonly byte[] voxelData = new byte[Preferences.chunkSize * Preferences.chunkSize * 30];
             private void CreateTexture(TextureQuality quality)
             {
                 DestroyTexture();
-
-                Map.GetVoxels(voxelData, X, Y, out int w, out int h, out int d);
-                var src = voxelData;
-
-                // Higher steps skip more voxels
-                int step = quality == TextureQuality.High ? 1 : 2;
-
-                // Determine bounds of useful voxel data
-                int xMin = 0;
-                int yMin = 0;
-                int zMin = 0;
-
-#warning Collapsing texture bounds is disabled!
-                int xMax = 128;
-                int yMax = 128;
-                int zMax = 32;
-
-                if (quality == TextureQuality.High)
-                    CollapseBounds(src, ref xMin, ref yMin, ref zMin, ref xMax, ref yMax, ref zMax);
-
-                {
-                    var bounds = new Bounds();
-                    var bMin = new Vector3(xMin, yMin, zMin);
-                    var bMax = new Vector3(xMax, yMax, zMax);
-                    var scl = new Vector3(1f / size, 1f / size, 1f / depth);
-                    bMin.Scale(scl);
-                    bMax.Scale(scl);
-                    bounds.SetMinMax(bMin, bMax);
-                    VoxelBounds = bounds;
-                }
-
-                // Create texture
-                Texture = new Texture3D(
-                    Math.Max((xMax - xMin) / step, 1),
-                    Math.Max((yMax - yMin) / step, 1),
-                    Math.Max((zMax - zMin) / step, 1),
-                    texFormat,
-                    mipmap: false)
-                {
-                    wrapMode = TextureWrapMode.Clamp,
-                    filterMode = FilterMode.Point,
-                    anisoLevel = 0,
-                    name = $"Voxel ({X}, {Y})"
-                };
-
-                // Fill pixel buffer
-                if (pixelBuffer == null)
-                    pixelBuffer = new Color[size * size * depth];
-
-                var dst = pixelBuffer;
-
-                int i = 0;
-
-                
-                for (int z = zMin; z < zMax; z += step)
-                {
-                    int zOffset = z * w * h;
-                    for (int y = yMin; y < yMax; y += step)
-                    {
-                        int yOffset = y * w;
-                        for (int x = xMin; x < xMax; x += step)
-                        {
-                            byte a;
-                            if (x < w && y < h && z < d)
-                                a = src[x + yOffset + zOffset];
-                            else
-                                a = 0;
-
-                            dst[i++].a = a / 255f;
-                        }
-                    }
-                }
-
-                // Upload texture
-                Texture.SetPixels(dst);
-                Texture.Apply();
+                VoxelWorld.DoVoxelChunkUpload(this);
             }
 
             private static readonly QuadDirs[] quadDirs = new QuadDirs[]

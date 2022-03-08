@@ -4,14 +4,13 @@ using System.IO;
 using System.Collections.Generic;
 using RWCustom;
 using UnityEngine;
-using LZ4pn;
 
 namespace VoxelWorld
 {
     // Holds voxel data for a room
     internal class VoxelMap
     {
-        private byte[][] lz4Chunks;
+        public byte[][] lz4Chunks;
         private bool[] subchunks;
         private byte[] lightCookieData;
         private bool loadingVoxels;
@@ -34,6 +33,11 @@ namespace VoxelWorld
 
         public string FilePath { get; }
         public void GetVoxels(byte[] buffer, int chunkX, int chunkY, out int width, out int height, out int depth)
+        {
+            WaitForVoxels();
+            DecompressChunk(lz4Chunks[chunkX + chunkY * XChunks], buffer, xVoxels, yVoxels, chunkX, chunkY, out width, out height, out depth);
+        }
+        public unsafe void GetVoxels(byte* buffer, int chunkX, int chunkY, out int width, out int height, out int depth)
         {
             WaitForVoxels();
             DecompressChunk(lz4Chunks[chunkX + chunkY * XChunks], buffer, xVoxels, yVoxels, chunkX, chunkY, out width, out height, out depth);
@@ -83,14 +87,27 @@ namespace VoxelWorld
             return chunkCache[index].data;
         }
 
-        private static void DecompressChunk(byte[] lz4Data, byte[] buffer, int xVoxels, int yVoxels, int chunkX, int chunkY, out int width, out int height, out int depth)
+        private static unsafe void DecompressChunk(byte[] lz4Data, byte[] buffer, int xVoxels,
+            int yVoxels, int chunkX, int chunkY, out int width, out int height, out int depth)
+        {
+            fixed (byte* bufPtr = buffer)
+            {
+                DecompressChunk(lz4Data, bufPtr, xVoxels, yVoxels, chunkX, chunkY, out width, out height, out depth);
+            }
+        }
+
+        private static unsafe void DecompressChunk(byte[] lz4Data, byte* buffer, int xVoxels,
+            int yVoxels, int chunkX, int chunkY, out int width, out int height, out int depth)
         {
             // Bound checks would be redundant
             width = Math.Min(xVoxels - chunkX * Preferences.chunkSize, Preferences.chunkSize);
             height = Math.Min(yVoxels - chunkY * Preferences.chunkSize, Preferences.chunkSize);
             depth = 30;
 
-            LZ4Codec.Decode32(lz4Data, 0, lz4Data.Length, buffer, 0, width * height * depth, true);
+            fixed (byte* lz4Ptr = lz4Data)
+            {
+                VoxelWorld.LZ4Decompress(lz4Ptr, buffer, lz4Data.Length, width * height * depth);
+            }
         }
 
         public int XVoxels

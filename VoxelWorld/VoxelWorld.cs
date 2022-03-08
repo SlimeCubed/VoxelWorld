@@ -9,7 +9,7 @@ using RWCustom;
 namespace VoxelWorld
 {
     [BepInPlugin("com.slime-cubed.voxelworld", "Voxel World", "1.0.0")]
-    public class VoxelWorld : BaseUnityPlugin
+    public partial class VoxelWorld : BaseUnityPlugin
     {
         readonly static Dictionary<Room, VoxelMap> voxelData = new Dictionary<Room, VoxelMap>();
         readonly static List<string> threadedLogs = new List<string>();
@@ -19,6 +19,9 @@ namespace VoxelWorld
         {
             try
             {
+                StartRenderThread();
+                VramCommand.TryRegister();
+
                 On.RainWorldGame.ShutDownProcess += RainWorldGame_ShutDownProcess;
                 On.AbstractRoom.Abstractize += AbstractRoom_Abstractize;
                 On.Room.NowViewed += Room_NowViewed;
@@ -37,6 +40,11 @@ namespace VoxelWorld
                     Debug.Log(e);
                 };
             }
+        }
+
+        private void OnDisable()
+        {
+            ShutdownRenderThread();
         }
 
         public void Update()
