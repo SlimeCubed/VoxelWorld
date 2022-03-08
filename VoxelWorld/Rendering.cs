@@ -30,18 +30,10 @@ namespace VoxelWorld
             On.RoomCamera.DepthAtCoordinate += RoomCamera_DepthAtCoordinate;
             On.RoomCamera.PixelColorAtCoordinate += RoomCamera_PixelColorAtCoordinate;
 
-            int doomCounters = 0;
-            On.RainWorld.Update += (orig, self) =>
+            On.RainWorld.Start += (orig, self) =>
             {
                 orig(self);
-                if (doomCounters++ == 60 * 5)
-                {
-                    try
-                    {
-                        FindSharpener();
-                    }
-                    catch(Exception e) { Debug.LogException(e); }
-                }
+                FindSharpener();
             };
         }
 
@@ -234,6 +226,7 @@ namespace VoxelWorld
             private Shader voxelDepth;
             private RenderTexture shadowMap;
             private RoomPos shadowPos;
+            private Matrix4x4 lastShadowProj;
 
             private Camera Cam => cam ?? (cam = GetComponent<Camera>());
             private Camera SrcCam => srcCam ?? (srcCam = transform.parent.GetComponent<Camera>());
@@ -282,35 +275,7 @@ namespace VoxelWorld
             {
                 bool dirty = ((renderingCamPos.Distance(shadowPos) > 20f) || Input.GetKey(KeyCode.Alpha6) || Input.GetKeyUp(KeyCode.Alpha6)) && renderingVoxels;
 
-                lightCam.enabled = dirty;
-                if(dirty)
-                {
-                    shadowPos = renderingCamPos;
-                }
-
-                Quaternion angle = Quaternion.Euler(lightAngle);
-                lightCam.transform.position = Cam.transform.parent.position - angle * Vector3.forward * Preferences.sunDistance;
-                lightCam.transform.position += (Vector3)(shadowPos.pos - renderingCamPos.pos);
-                lightCam.transform.localRotation = angle;
-                lightCam.orthographic = false;
-
-                // The projection matrix approximates a cube
-                // It must always cover the visible portion of the level
-                float cubeSize = Mathf.Max(levelTexWidth, levelTexHeight) * Preferences.shadowMapScale;
-
-                lightCam.nearClipPlane = Preferences.sunDistance - cubeSize / 2f;
-                lightCam.farClipPlane = Preferences.sunDistance + cubeSize / 2f;
-                lightCam.fieldOfView = 2f * Mathf.Rad2Deg * Mathf.Atan2(cubeSize / 2f, lightCam.nearClipPlane);
-                
-                lightCam.SetReplacementShader(voxelDepth, "RenderType");
-                lightCam.depth = -1000f;
-
-                lightCam.backgroundColor = fullShadow ? Color.black : Color.clear;
-                if (fullShadow)
-                    lightCam.cullingMask = 0;
-                else
-                    lightCam.cullingMask = 1 << Preferences.voxelSpriteLayer | 1 << Preferences.lightCookieLayer;
-
+                // Draw shadow map directly to screen when a keybind is pressed
                 if (Preferences.viewShadowMap)
                 {
                     if (Input.GetKey(KeyCode.Alpha6))
@@ -322,9 +287,49 @@ namespace VoxelWorld
                         lightCam.targetTexture = shadowMap;
                 }
 
+
+                // Update projection matrix
+                Quaternion angle = Quaternion.Euler(lightAngle);
+                lightCam.transform.localRotation = angle;
+                lightCam.orthographic = false;
+
+                // The projection matrix approximates a cube
+                // It must always cover the visible portion of the level
+                float cubeSize = Mathf.Max(levelTexWidth, levelTexHeight) * Preferences.shadowMapScale;
+
+                lightCam.nearClipPlane = Preferences.sunDistance - cubeSize / 2f;
+                lightCam.farClipPlane = Preferences.sunDistance + cubeSize / 2f;
+                lightCam.fieldOfView = 2f * Mathf.Rad2Deg * Mathf.Atan2(cubeSize / 2f, lightCam.nearClipPlane);
+
+                lightCam.SetReplacementShader(voxelDepth, "RenderType");
+                lightCam.depth = -1000f;
+
+                if (lightCam.projectionMatrix != lastShadowProj)
+                    dirty = true;
+
+
+                lightCam.enabled = dirty;
+                if (dirty)
+                {
+                    shadowPos = renderingCamPos;
+                }
+
+
+                // Update view matrix
+                lightCam.transform.position = Cam.transform.parent.position - angle * Vector3.forward * Preferences.sunDistance;
+                lightCam.transform.position += (Vector3)(shadowPos.pos - renderingCamPos.pos);
+                
+                lightCam.backgroundColor = fullShadow ? Color.black : Color.clear;
+                if (fullShadow)
+                    lightCam.cullingMask = 0;
+                else
+                    lightCam.cullingMask = 1 << Preferences.voxelSpriteLayer | 1 << Preferences.lightCookieLayer;
+
+
                 // Update shader variables
                 Matrix4x4 toCam = lightCam.worldToCameraMatrix;
                 toCam[2, 3] += Preferences.lightPenetration;
+                lastShadowProj = lightCam.projectionMatrix;
                 Shader.SetGlobalMatrix("_VoxelShadowVP", lightCam.projectionMatrix * toCam);
                 Shader.SetGlobalTexture("_VoxelShadowTex", shadowMap);
             }
