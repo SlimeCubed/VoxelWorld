@@ -13,6 +13,7 @@ namespace VoxelWorld
         public static int voxelSpriteLayer = 11;
         public static int lightCookieLayer = 12;
         public const int chunkSize = 128; // 128 is enforced by level format
+        public const int chunkDepth = 32;
         public static int subchunkSize = 8;
         public static int maxCachedChunks = 64;
 
@@ -51,8 +52,12 @@ namespace VoxelWorld
 
         // Misc
         public static bool showDiagnostics = false;
+        public static bool showPerfLogs = false;
         public static bool showFPS = false;
 
+        // Upload
+        public const int uploadPoolSize = 32; 
+        
         public enum ScrollingMode
         {
             Static,
