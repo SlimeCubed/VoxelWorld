@@ -21,6 +21,7 @@ namespace VoxelWorld
             {
                 StartRenderThread();
                 VramCommand.TryRegister();
+                ShutdownCommand.TryRegister();
 
                 On.RainWorldGame.ShutDownProcess += RainWorldGame_ShutDownProcess;
                 On.AbstractRoom.Abstractize += AbstractRoom_Abstractize;

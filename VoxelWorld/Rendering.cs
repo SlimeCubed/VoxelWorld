@@ -250,9 +250,12 @@ namespace VoxelWorld
 
             public void Start()
             {
+                gameObject.AddComponent<RenderTimer>().Task = Diag.FrameTimer.Task.Voxels;
+
                 var go = new GameObject("Sunlight Shadowmapper");
                 lightCam = go.AddComponent<Camera>();
                 lightCam.enabled = false;
+                lightCam.gameObject.AddComponent<RenderTimer>().Task = Diag.FrameTimer.Task.Shadows;
                 voxelDepth = FindObjectOfType<RainWorld>().Shaders["VoxelDepth"].shader;
 
                 shadowMap = new RenderTexture(Preferences.shadowMapSize, Preferences.shadowMapSize, 32, RenderTextureFormat.RFloat);
@@ -386,6 +389,21 @@ namespace VoxelWorld
                 SrcCam.cullingMask &= ~(1 << Preferences.voxelSpriteLayer | 1 << Preferences.lightCookieLayer);
 
                 Shader.SetGlobalTexture("_LevelTex", rt);
+            }
+        }
+
+        private class RenderTimer : MonoBehaviour
+        {
+            public Diag.FrameTimer.Task Task { get; set; }
+
+            public void OnPreRender()
+            {
+                Diag.Timer.StartTimer(Task);
+            }
+
+            public void OnPostRender()
+            {
+                Diag.Timer.StopTimer();
             }
         }
 

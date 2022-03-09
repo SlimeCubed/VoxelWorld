@@ -81,6 +81,7 @@
   <ItemGroup>
     <Compile Include="CameraScroll.cs" />
     <Compile Include="CustomAtlases.cs" />
+    <Compile Include="ShutdownCommand.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Diag.cs" />
     <Compile Include="FLightCookieSprite.cs" />
