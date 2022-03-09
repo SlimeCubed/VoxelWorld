@@ -290,7 +290,6 @@ namespace VoxelWorld
             // Camera used for shadowmapping
             public void UpdateLightCamera()
             {
-                return;
                 bool dirty = ((renderingCamPos.Distance(shadowPos) > 20f) || Input.GetKey(KeyCode.Alpha6) || Input.GetKeyUp(KeyCode.Alpha6)) && renderingVoxels;
 
                 // Draw shadow map directly to screen when a keybind is pressed
