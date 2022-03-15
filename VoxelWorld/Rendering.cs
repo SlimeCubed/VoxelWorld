@@ -398,12 +398,12 @@ namespace VoxelWorld
 
             public void OnPreRender()
             {
-                Diag.Timer.StartTimer(Task);
+                Diag.Timer?.StartTimer(Task);
             }
 
             public void OnPostRender()
             {
-                Diag.Timer.StopTimer();
+                Diag.Timer?.StopTimer();
             }
         }
 

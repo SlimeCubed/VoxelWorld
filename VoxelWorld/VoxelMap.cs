@@ -377,7 +377,7 @@ namespace VoxelWorld
 
         public byte GetVoxel(int x, int y, int z)
         {
-            Diag.Timer.StartTimer(Diag.FrameTimer.Task.VoxelRead);
+            Diag.Timer?.StartTimer(Diag.FrameTimer.Task.VoxelRead);
 
             x = Mathf.Clamp(x, 0, XVoxels - 1);
             y = Mathf.Clamp(y, 0, YVoxels - 1);
@@ -391,7 +391,7 @@ namespace VoxelWorld
             y = Mathf.Clamp(y % Preferences.chunkSize, 0, h);
             z = Mathf.Clamp(z, 0, d);
 
-            Diag.Timer.StopTimer();
+            Diag.Timer?.StopTimer();
 
             return data[x + y * w + z * w * h];
         }
