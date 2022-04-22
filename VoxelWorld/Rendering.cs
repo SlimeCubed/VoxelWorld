@@ -33,14 +33,21 @@ namespace VoxelWorld
             On.RainWorld.Start += (orig, self) =>
             {
                 orig(self);
-                FindSharpener();
+                try
+                {
+                    FindSharpener();
+                }
+                catch { }
             };
         }
         
         private static void FindSharpener()
         {
             Type modType = Type.GetType("Sharpener.SharpenerMod, Sharpener");
+            if (modType == null) return;
+
             var inst = (BaseUnityPlugin)UnityEngine.Object.FindObjectOfType(modType);
+            if (inst == null) return;
 
             var _realRes = modType.GetField("_realRes", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             var Mode = modType.GetProperty("Mode", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
