@@ -1,18 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 using TerraFX.Interop.DirectX;
 using UnityEngine;
-using static TerraFX.Interop.DirectX.D3D11_CPU_ACCESS_FLAG;
-using static TerraFX.Interop.DirectX.D3D11_FEATURE;
-using static TerraFX.Interop.DirectX.D3D11_MAP;
-using static TerraFX.Interop.DirectX.D3D11_MAP_FLAG;
-using static TerraFX.Interop.DirectX.D3D11_USAGE;
-using static TerraFX.Interop.DirectX.DXGI_FORMAT;
-using static TerraFX.Interop.DirectX.DXGI;
-using static VoxelWorld.Helpers;
 using Debug = UnityEngine.Debug;
 
 namespace VoxelWorld;
@@ -23,13 +11,24 @@ public unsafe partial class VoxelWorld
     public static ID3D11DeviceContext* D3DImmediate;
     private static ID3D11Texture3D*[] _stagingPool;
     private static int _poolIndex;
-    private static readonly Queue<CmdVoxelChunkUpload> VoxelUploadQueue = new();
 
     private static void StartRenderThread()
     {
         LogThreaded($"[VoxelWorld] Main thread: {Thread.CurrentThread.ManagedThreadId:x}");
-        D3DDevice = Init(Marshal.GetFunctionPointerForDelegate(renderThreadCallback));
 
+        VoxelWorldNativePreferences nativePrefs = default;
+        nativePrefs.UploadPoolSize = Preferences.uploadPoolSize;
+        nativePrefs.ChunkSize = Preferences.chunkSize;
+        nativePrefs.ChunkDepth = Preferences.chunkDepth;
+        
+        D3DDevice = Init(&nativePrefs);
+
+        // fixed (char* p = "SU_A22".ToCharArray())
+        /*{
+            var ptr = VoxelMapAllocate("SU_A22");
+            VoxelMapFree(ptr);
+        }*/
+        
         GL.IssuePluginEvent((int)PluginEvents.Init);
     }
 
@@ -37,89 +36,6 @@ public unsafe partial class VoxelWorld
     {
         //Debug.Log("ASDASDASD");
         //Detach();
-    }
-
-    private static readonly Action<int> renderThreadCallback = RenderThreadCallback;
-
-    private static void RenderThreadCallback(int eventId)
-    {
-        try
-        {
-            var eventEnum = (PluginEvents)eventId;
-            switch (eventEnum)
-            {
-                case PluginEvents.Init:
-                    RenderThreadInit();
-                    break;
-
-                case PluginEvents.ChunkUpload:
-                    RenderThreadDoChunkUpload();
-                    break;
-            }
-        }
-        catch (Exception e)
-        {
-            LogThreaded($"Exception in render thread! {e}");
-        }
-    }
-
-    private static void RenderThreadInit()
-    {
-        GetD3D11Device();
-        InitUploadBuffers();
-    }
-
-    private static void GetD3D11Device()
-    {
-        D3DDevice->AddRef();
-
-        LogThreaded($"Initializing VoxelWorld in render thread!");
-        LogThreaded($"[VoxelWorld] Render thread: {Thread.CurrentThread.ManagedThreadId:x}");
-
-        fixed (ID3D11DeviceContext** imm = &D3DImmediate)
-            D3DDevice->GetImmediateContext(imm);
-
-        var fl = D3DDevice->GetFeatureLevel();
-
-        LogThreaded($"D3D11 FL: {fl}");
-
-        D3D11_FEATURE_DATA_THREADING threading;
-        ThrowIfFailed(D3DDevice->CheckFeatureSupport(
-            D3D11_FEATURE_THREADING,
-            &threading,
-            (uint)sizeof(D3D11_FEATURE_DATA_THREADING)));
-
-        LogThreaded(
-            $"D3D11 threading supported? Creates: {(bool)threading.DriverConcurrentCreates}, command lists: {(bool)threading.DriverCommandLists}");
-
-        var flags = (D3D11_CREATE_DEVICE_FLAG)D3DDevice->GetCreationFlags();
-        LogThreaded($"D3D11 creation flags: {flags}");
-
-        Thread.CurrentThread.IsBackground = true;
-    }
-
-    private static void InitUploadBuffers()
-    {
-        _stagingPool = new ID3D11Texture3D*[Preferences.uploadPoolSize];
-
-        for (var i = 0; i < _stagingPool.Length; i++)
-        {
-            var desc = new D3D11_TEXTURE3D_DESC
-            {
-                Width = Preferences.chunkSize,
-                Height = Preferences.chunkSize,
-                Depth = Preferences.chunkDepth,
-                Usage = D3D11_USAGE_STAGING,
-                Format = DXGI_FORMAT_A8_UNORM,
-                MipLevels = 0,
-                BindFlags = 0,
-                MiscFlags = 0,
-                CPUAccessFlags = (uint)D3D11_CPU_ACCESS_WRITE | (uint)D3D11_CPU_ACCESS_READ
-            };
-
-            fixed (ID3D11Texture3D** tex = &_stagingPool[i])
-                ThrowIfFailed(D3DDevice->CreateTexture3D(&desc, null, tex));
-        }
     }
 
     public static ID3D11Texture3D* GetNextPoolTexture()
@@ -132,11 +48,6 @@ public unsafe partial class VoxelWorld
 
     internal static void DoVoxelChunkUpload(VoxelMapView.VoxelChunk chunk)
     {
-        var cmd = new CmdVoxelChunkUpload
-        {
-            Chunk = chunk,
-        };
-
         // Create texture
         chunk.Texture = new Texture3D(
             128,
@@ -162,17 +73,16 @@ public unsafe partial class VoxelWorld
             chunk.VoxelBounds = bounds;
         }
 
-        cmd.Texture = (ID3D11Texture3D*)chunk.Texture.GetNativeTexturePtr();
-
-        lock (VoxelUploadQueue)
-        {
-            VoxelUploadQueue.Enqueue(cmd);
-        }
+        chunk.Map.CheckValid();
+        QueueVoxelUpload(
+            (ID3D11Texture3D*)chunk.Texture.GetNativeTexturePtr(),
+            chunk.Map.Data,
+            chunk.X, chunk.Y);
 
         GL.IssuePluginEvent((int)PluginEvents.ChunkUpload);
     }
 
-    private static void RenderThreadDoChunkUpload()
+    /*private static void RenderThreadDoChunkUpload()
     {
         var sw2 = Stopwatch.StartNew();
         var sw = Stopwatch.StartNew();
@@ -229,11 +139,5 @@ public unsafe partial class VoxelWorld
             LogThreaded($"tex upload: {sw2.ElapsedMilliseconds} ms");
             LogThreaded($"Break down: map {Micros(tMap)} copy {Micros(tCopy)} submit {Micros(tSubmit)}");
         }
-    }
-
-    private sealed class CmdVoxelChunkUpload
-    {
-        public ID3D11Texture3D* Texture;
-        public VoxelMapView.VoxelChunk Chunk;
-    }
+    }*/
 }

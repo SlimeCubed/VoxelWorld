@@ -47,7 +47,7 @@ namespace VoxelWorld
             ShutdownRenderThread();
         }
 
-        public void Update()
+        public unsafe void Update()
         {
             // Apply late to overwrite Sharpener's shaders
             ShaderFixes.Apply();
@@ -68,6 +68,13 @@ namespace VoxelWorld
                     Debug.LogException(te);
                 }
                 threadedExceptions.Clear();
+            }
+
+            char* renderLog;
+            while ((renderLog = LogFetch()) != null)
+            {
+                var logStr = new string(renderLog);
+                Logger.LogDebug("Render Thread: " + logStr);
             }
         }
 

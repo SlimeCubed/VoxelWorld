@@ -17,6 +17,7 @@
     </NuGetPackageImportStamp>
     <LangVersion>10</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RWLibs>$(MSBuildThisFileDirectory)\..\..\rwbeplibs\</RWLibs>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -174,8 +175,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"$(ILMergeConsolePath)" /targetplatform:v2 /lib:"%25RWLibs%25" /ndebug /out:SeamlessLevels.dll $(TargetFileName) Ionic.Zlib.dll
-if defined RWMods (copy /Y "SeamlessLevels.dll" "%25RWMods%25")</PostBuildEvent>
+    <PostBuildEvent>"$(ILMergeConsolePath)" /targetplatform:v2 "/lib:C:\Users\Pieter-Jan Briers\Projects\RW Other Mods\rwbeplibs" /ndebug /out:SeamlessLevels.dll VoxelWorld.dll Ionic.Zlib.dll
+      if defined RWMods (copy /Y "SeamlessLevels.dll" "%25RWMods%25")</PostBuildEvent>
   </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
