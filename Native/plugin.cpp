@@ -83,5 +83,5 @@ void EXPORT_API CopyVoxelsToTex(
 
 void EXPORT_API LZ4Decompress(const u8 *src, u8 *dst, i32 compressedSize, i32 dstCapacity)
 {
-	LZ4_decompress_safe(src, dst, compressedSize, dstCapacity);
+	LZ4_decompress_safe((const char*) src, (char*) dst, compressedSize, dstCapacity);
 }
