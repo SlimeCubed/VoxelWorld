@@ -3,6 +3,8 @@
 #include <windows.h>
 #include "shared.h"
 #include "voxel_map.h"
+#include "misc.h"
+#include "plugin.h"
 
 EXPORT_API VoxelMapData* VoxelMapAllocate(const wchar_t* name)
 {
@@ -45,11 +47,11 @@ VoxelMap::~VoxelMap()
 
 	for (i32 i = 0; i < Data.CountLZ4Chunks; i++)
 	{
-		delete Data.LZ4Chunks[i];
+		delete[] Data.LZ4Chunks[i];
 	}
 
-	delete Data.LZ4Chunks;
-	delete Data.LZ4ChunkLengths;
+	delete[] Data.LZ4Chunks;
+	delete[] Data.LZ4ChunkLengths;
 
 	Data.LZ4Chunks = nullptr;
 	Data.LZ4ChunkLengths = nullptr;
@@ -82,4 +84,14 @@ void GetVoxels(VoxelMapData* data, u8* buffer, i32 chunkX, i32 chunkY)
 		buffer,
 		data->XVoxels, data->YVoxels,
 		chunkX, chunkY);
+}
+
+i32 XChunks(VoxelMapData* data)
+{
+	return (data->XVoxels + preferences.ChunkSize - 1) / preferences.ChunkSize;
+}
+
+i32 YChunks(VoxelMapData* data)
+{
+	return (data->YVoxels + preferences.ChunkSize - 1) / preferences.ChunkSize;
 }

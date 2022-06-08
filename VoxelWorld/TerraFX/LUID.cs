@@ -7,10 +7,8 @@ namespace TerraFX.Interop.Windows
 {
     public partial struct LUID
     {
-        [NativeTypeName("DWORD")]
         public uint LowPart;
 
-        [NativeTypeName("LONG")]
         public int HighPart;
     }
 }

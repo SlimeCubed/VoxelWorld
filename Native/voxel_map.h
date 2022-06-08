@@ -1,8 +1,8 @@
+#pragma once
 
 #include <memory>
 #include "shared.h"
 #include "logging.h"
-#include "plugin.h"
 
 // We track the VoxelMaps behind a shared_ptr,
 // so that upload cmds from the render thread can keep them alive.
@@ -32,15 +32,17 @@ struct VoxelMap
 	~VoxelMap();
 };
 
-i32 XChunks(VoxelMapData* data)
-{
-	return (data->XVoxels + preferences.ChunkSize - 1) / preferences.ChunkSize;
-}
+EXPORT_API VoxelMapData* VoxelMapAllocate(const wchar_t* name);
 
-i32 YChunks(VoxelMapData* data)
-{
-	return (data->YVoxels + preferences.ChunkSize - 1) / preferences.ChunkSize;
-}
+EXPORT_API void VoxelMapFree(VoxelMapData* ptr);
+
+EXPORT_API void VoxelMapAllocChunk(VoxelMapData* ptr, i32 chunk, i32 length);
+
+EXPORT_API void VoxelMapInit(VoxelMapData* ptr);
+
+i32 XChunks(VoxelMapData* data);
+
+i32 YChunks(VoxelMapData* data);
 
 void WaitForVoxels(VoxelMapData* data);
 

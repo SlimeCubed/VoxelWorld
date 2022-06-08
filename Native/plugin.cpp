@@ -12,13 +12,7 @@
 #include "plugin.h"
 
 #include "logging.h"
-
-enum PluginEvents
-{
-	evInit = 0,
-	evChunkUpload,
-	evDetach = -1
-};
+#include "voxel_map.h"
 
 struct VoxelWorldNativeChunkUpload
 {
@@ -63,10 +57,18 @@ EXPORT_API void UnitySetGraphicsDevice(void *device, int deviceType, int eventTy
 	_device->AddRef();
 }
 
-EXPORT_API ID3D11Device *Init(VoxelWorldNativePreferences *prefs)
+EXPORT_API void Init(VoxelWorldNativePreferences *prefs)
 {
-	::preferences = *prefs;
-	return _device;
+	preferences = *prefs;
+}
+
+EXPORT_API void Shutdown()
+{
+	_device->Release();
+	_device = nullptr;
+
+	_deviceContext->Release();
+	_deviceContext = nullptr;
 }
 
 static void GetD3D11Device()
@@ -115,6 +117,24 @@ static void RenderThreadInit()
 
 	GetD3D11Device();
 	InitUploadBuffers();
+}
+
+static void RenderThreadShutdown()
+{
+	if (!staging_pool)
+		return;
+
+	for (i32 i = 0; i < preferences.UploadPoolSize; i++)
+	{
+		auto texture = staging_pool[i];
+		// Why could this be null? Who the hell knows!
+		if (!texture)
+			continue;
+
+		texture->Release();
+	}
+
+	delete[] staging_pool;
 }
 
 static ID3D11Texture3D *GetNextPoolTexture()
@@ -197,25 +217,37 @@ EXPORT_API void UnityRenderEvent(int eventID)
 		case evChunkUpload:
 			RenderThreadDoChunkUpload();
 			break;
+
+		case evShutdown:
+			RenderThreadShutdown();
+			break;
 	}
 }
 
-EXPORT_API void CopyVoxelsToTex(
-	u8 *dst, u8 *src,
-	i32 w, i32 h, i32 d,
-	i32 xMin, i32 xMax,
-	i32 yMin, i32 yMax,
-	i32 zMin, i32 zMax,
-	i32 step)
+EXPORT_API void QueryD3D11Device(DxgiDeviceQuery* query)
 {
-	i32 xDelta = xMax - xMin;
-	i32 yDelta = yMax - yMin;
-	i32 zDelta = zMax - zMin;
+	*query = {};
 
-	memcpy(dst, src, xDelta*yDelta*min(zDelta, d));
-}
+	IDXGIDevice* dxgiObject;
+	_device->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiObject);
+	IDXGIAdapter* dxgiAdapter;
+	dxgiObject->GetAdapter(&dxgiAdapter);
+	dxgiObject->Release();
 
-EXPORT_API void LZ4Decompress(const u8 *src, u8 *dst, i32 compressedSize, i32 dstCapacity)
-{
-	LZ4_decompress_safe((const char*) src, (char*) dst, compressedSize, dstCapacity);
+	dxgiAdapter->GetDesc(&query->Desc);
+
+	// VRAM info is only available with DXGI 1.4 through IDXGIAdapter3.
+
+	IDXGIAdapter3* dxgiAdapter3;
+	dxgiAdapter->QueryInterface(__uuidof(IDXGIAdapter3), (void**)&dxgiAdapter3);
+	dxgiAdapter->Release();
+
+	if (!dxgiAdapter3)
+		return;
+
+	query->VideoMemoryFetched = 1;
+	dxgiAdapter3->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &query->VideoMemoryLocal);
+	dxgiAdapter3->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &query->VideoMemoryNonLocal);
+
+	dxgiAdapter3->Release();
 }

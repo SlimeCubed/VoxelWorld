@@ -47,11 +47,16 @@ namespace VoxelWorld
             ShutdownRenderThread();
         }
 
-        public unsafe void Update()
+        public void Update()
         {
             // Apply late to overwrite Sharpener's shaders
             ShaderFixes.Apply();
+            
+            FlushLogs();
+        }
 
+        private void FlushLogs()
+        {
             // The default log handler ignores messages from other threads
             lock (threadedLogs)
             {
@@ -70,14 +75,17 @@ namespace VoxelWorld
                 threadedExceptions.Clear();
             }
 
-            char* renderLog;
-            while ((renderLog = LogFetch()) != null)
+            unsafe
             {
-                var logStr = new string(renderLog);
-                Logger.LogDebug("Render Thread: " + logStr);
+                char* renderLog;
+                while ((renderLog = LogFetch()) != null)
+                {
+                    var logStr = new string(renderLog);
+                    Logger.LogDebug("Native: " + logStr);
+                }
             }
         }
-
+        
         public static string GetRoomFilePath(string name, string suffix)
         {
             return $"{Custom.RootFolderDirectory()}Voxels/{name.Split(new string[] { "_" }, StringSplitOptions.None)[0]}/{name}{suffix}".Replace('/', Path.DirectorySeparatorChar);

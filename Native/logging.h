@@ -3,6 +3,8 @@
 #include <string>
 #include "shared.h"
 
+EXPORT_API const wchar_t* LogFetch();
+
 // https://stackoverflow.com/a/26221725/4678631
 template<typename ... Args>
 std::wstring string_format( const std::wstring& format, Args ... args )

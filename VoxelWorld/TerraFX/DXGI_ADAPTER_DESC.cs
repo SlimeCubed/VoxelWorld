@@ -9,7 +9,6 @@ namespace TerraFX.Interop.DirectX
 {
     public unsafe partial struct DXGI_ADAPTER_DESC
     {
-        [NativeTypeName("WCHAR [128]")]
         public fixed ushort Description[128];
 
         public uint VendorId;
@@ -20,13 +19,10 @@ namespace TerraFX.Interop.DirectX
 
         public uint Revision;
 
-        [NativeTypeName("SIZE_T")]
         public nuint DedicatedVideoMemory;
 
-        [NativeTypeName("SIZE_T")]
         public nuint DedicatedSystemMemory;
 
-        [NativeTypeName("SIZE_T")]
         public nuint SharedSystemMemory;
 
         public LUID AdapterLuid;

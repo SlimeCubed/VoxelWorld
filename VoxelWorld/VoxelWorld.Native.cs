@@ -7,29 +7,20 @@ namespace VoxelWorld;
 public unsafe partial class VoxelWorld
 {
     [DllImport("VoxelWorldNative", CallingConvention = CallingConvention.Cdecl)]
-    private static extern ID3D11Device* Init(VoxelWorldNativePreferences* preferences);
+    private static extern void Init(VoxelWorldNativePreferences* preferences);
 
     [DllImport("VoxelWorldNative", CallingConvention = CallingConvention.Cdecl)]
     private static extern char* LogFetch();
     
     [DllImport("VoxelWorldNative", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void CopyVoxelsToTex(
-        byte* dst, byte* src,
-        int w, int h, int d,
-        int xMin, int xMax,
-        int yMin, int yMax,
-        int zMin, int zMax,
-        int step);
-
-    [DllImport("VoxelWorldNative", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void QueueVoxelUpload(ID3D11Texture3D* texture, VoxelMapData* map, int chunkX, int chunkY);
+    public static extern void QueueVoxelUpload(IntPtr texture, VoxelMapData* map, int chunkX, int chunkY);
     
     [DllImport("VoxelWorldNative", CallingConvention = CallingConvention.Cdecl)]
     public static extern void LZ4Decompress(
         byte* src, byte* dst, int compressedSize, int dstCapacity);
 
     [DllImport("VoxelWorldNative", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Detach();
+    public static extern void Shutdown();
 
     
     [DllImport("VoxelWorldNative", CallingConvention = CallingConvention.Cdecl)]
@@ -46,12 +37,15 @@ public unsafe partial class VoxelWorld
 
     [DllImport("VoxelWorldNative", CallingConvention = CallingConvention.Cdecl)]
     public static extern void VoxelMapMemcpy(void* dst, void* src, nuint count);
+
+    [DllImport("VoxelWorldNative", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void QueryD3D11Device(DxgiDeviceQuery* query);
    
     public enum PluginEvents : int
     {
         Init = 0,
         ChunkUpload,
-        Detach = -1
+        Shutdown = -1
     }
 
     public struct VoxelWorldNativePreferences
@@ -72,4 +66,12 @@ public unsafe partial class VoxelWorld
         
         public void* PtrPtr;
     }
+    
+    public struct DxgiDeviceQuery
+    {
+        public DXGI_ADAPTER_DESC Desc;
+        public byte VideoMemoryFetched;
+        public DXGI_QUERY_VIDEO_MEMORY_INFO VideoMemoryLocal;
+        public DXGI_QUERY_VIDEO_MEMORY_INFO VideoMemoryNonLocal;
+    };
 }
