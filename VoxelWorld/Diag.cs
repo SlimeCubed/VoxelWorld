@@ -13,6 +13,7 @@ namespace VoxelWorld
 {
     internal static class Diag
     {
+        public static FrameTimer Timer { get; private set; }
 
         public static void Enable()
         {
@@ -20,7 +21,7 @@ namespace VoxelWorld
             {
                 orig(self);
                 var go = Futile.instance.camera.transform.GetChild(0).gameObject;
-                go.AddComponent<FrameTimer>();
+                Timer = go.AddComponent<FrameTimer>();
                 go.AddComponent<FPSMeter>();
                 //new GameObject("Cam Timer", typeof(FrameTimer));
             };
@@ -62,8 +63,28 @@ namespace VoxelWorld
             }
         }
 
-        private class FrameTimer : MonoBehaviour
+        public class FrameTimer : MonoBehaviour
         {
+            public enum Task
+            {
+                Voxels,
+                Shadows,
+                Mesh,
+                VoxelRead,
+                Untracked
+            }
+
+            private static readonly Color[] segColors = new Color[]
+            {
+                Color.red,
+                Color.blue,
+                Color.green,
+                Color.yellow,
+                Color.gray
+            };
+
+            private static int Segs => segColors.Length;
+
             private const int frameBuffer = 60;
             private const float barWidth = 3f;
             private const float barHeightScale = 2f;
@@ -71,67 +92,97 @@ namespace VoxelWorld
             private const float acceptableThreshold = 1000f / 40f;
 
             private FContainer container;
-            private TriangleMesh mspfIndicator;
+            private TriangleMesh timeIndicator;
             private FSprite perfectBorder;
             private FSprite acceptableBorder;
-            private float[] msPerFrame;
+            private float[][] frameTimes;
             private int currentFrame = frameBuffer - 1;
+            private Stopwatch totalTimer;
+            private double lastFrameEnd;
 
-            private Stopwatch sw;
+            private double timerTime = -1.0;
+            private Task timerTask;
+
+            public void AddTime(Task task, float ms)
+            {
+                frameTimes[currentFrame][(int)task] += ms;
+            }
+
+            public void StartTimer(Task task)
+            {
+                if (timerTime != -1.0) throw new InvalidOperationException($"Another timer is already running: {timerTask}");
+
+                timerTask = task;
+                timerTime = totalTimer.Elapsed.TotalMilliseconds;
+            }
+
+            public void StopTimer()
+            {
+                AddTime(timerTask, (float)(totalTimer.Elapsed.TotalMilliseconds - timerTime));
+                timerTime = -1.0;
+            }
 
             public void Start()
             {
                 container = new FContainer();
-                msPerFrame = new float[frameBuffer];
-
-                var tris = new TriangleMesh.Triangle[frameBuffer * 2];
+                frameTimes = new float[frameBuffer][];
                 for (int i = 0; i < frameBuffer; i++)
+                    frameTimes[i] = new float[Segs];
+
+                var tris = new TriangleMesh.Triangle[frameBuffer * 2 * Segs];
+                for (int i = 0; i < frameBuffer * Segs; i++)
                 {
-                    int firstBot = i;
-                    int firstTop = frameBuffer + 1 + i * 2;
-                    tris[firstBot * 2 + 0] = new TriangleMesh.Triangle(firstBot, firstTop, firstBot + 1);
-                    tris[firstBot * 2 + 1] = new TriangleMesh.Triangle(firstBot + 1, firstTop, firstTop + 1);
+                    int o = i * 4;
+                    tris[i * 2 + 0] = new TriangleMesh.Triangle(o, o + 1, o + 2);
+                    tris[i * 2 + 1] = new TriangleMesh.Triangle(o + 1, o + 2, o + 3);
                 }
-                mspfIndicator = new TriangleMesh("Futile_White", tris, true);
-                container.AddChild(mspfIndicator);
+                timeIndicator = new TriangleMesh("Futile_White", tris, true);
+                container.AddChild(timeIndicator);
 
                 container.AddChild(perfectBorder = new FSprite("pixel") { color = Color.yellow, anchorX = 0f, anchorY = 0f });
                 container.AddChild(acceptableBorder = new FSprite("pixel") { color = Color.red, anchorX = 0f, anchorY = 0f });
 
                 Futile.stage.AddChild(container);
 
-                sw = new Stopwatch();
-                //StartCoroutine(UpdateCoroutine());
+                totalTimer = Stopwatch.StartNew();
             }
 
-            public void Update()
+            public void LateUpdate()
             {
-                if(!Preferences.showDiagnostics)
+                if (!Preferences.showDiagnostics)
                 {
                     container.isVisible = false;
                     return;
                 }
                 container.isVisible = true;
 
-                for(int i = 0; i < frameBuffer; i++)
-                {
-                    float ms = msPerFrame[(frameBuffer + currentFrame - i) % frameBuffer];
-                    Color c;
-                    if(ms < perfectThreshold)
-                        c = Color.green;
-                    else if(ms < acceptableThreshold)
-                        c = Color.yellow;
-                    else
-                        c = Color.red;
+                // Update current frame
+                var currentTimes = frameTimes[currentFrame];
+                AddTime(Task.Untracked, Math.Max((float)(totalTimer.Elapsed.TotalMilliseconds - lastFrameEnd) - currentTimes.Sum(), 0f));
+                lastFrameEnd = totalTimer.Elapsed.TotalMilliseconds;
 
-                    int firstBot = i;
-                    int firstTop = frameBuffer + 1 + i * 2;
-                    for (int o = 0; o <= 1; o++)
+                // Draw bars
+                for (int frame = 0; frame < frameBuffer; frame++)
+                {
+                    float yMin = 0f;
+                    float yMax = 0f;
+                    var times = frameTimes[(frameBuffer + currentFrame - frame) % frameBuffer];
+                    
+                    for (int seg = 0; seg < Segs; seg++)
                     {
-                        mspfIndicator.MoveVertice(firstBot + o, new Vector2((i + o) * barWidth, 0f));
-                        mspfIndicator.MoveVertice(firstTop + o, new Vector2((i + o) * barWidth, barHeightScale * ms));
-                        mspfIndicator.verticeColors[firstTop + o] = c;
-                        mspfIndicator.verticeColors[firstBot + o] = c;
+                        yMax += times[seg] * barHeightScale;
+                        Color c = segColors[seg];
+
+                        for (int x = 0; x <= 1; x++)
+                        {
+                            int o = (frame * Segs + seg) * 4 + x * 2;
+                            timeIndicator.MoveVertice(o + 0, new Vector2((frame + x) * barWidth, yMin));
+                            timeIndicator.MoveVertice(o + 1, new Vector2((frame + x) * barWidth, yMax));
+                            timeIndicator.verticeColors[o + 0] = c;
+                            timeIndicator.verticeColors[o + 1] = c;
+                        }
+
+                        yMin = yMax;
                     }
                 }
 
@@ -145,42 +196,13 @@ namespace VoxelWorld
 
                 container.x = 20f;
                 container.y = Futile.screen.height - 500f;
-            }
 
-            public void LateUpdate()
-            {
-                container.MoveToFront();
-            }
-
-            public void OnPreCull()
-            {
-                sw.Start();
-            }
-
-            public void OnRenderImage(RenderTexture src, RenderTexture dst)
-            {
-                sw.Stop();
                 currentFrame = (currentFrame + 1) % frameBuffer;
-                msPerFrame[currentFrame] = sw.ElapsedMilliseconds;
-                Graphics.Blit(src, dst);
-                sw.Reset();
-            }
 
-            private IEnumerator UpdateCoroutine()
-            {
-                var waitEof = new WaitForEndOfFrame();
-                var sw = new Stopwatch();
+                // Clear new frame
+                Array.Clear(frameTimes[currentFrame], 0, Segs);
 
-                while (true)
-                {
-                    sw.Start();
-                    yield return null;
-                    yield return waitEof;
-                    sw.Stop();
-                    currentFrame = (currentFrame + 1) % frameBuffer;
-                    msPerFrame[currentFrame] = sw.ElapsedMilliseconds;
-                    sw.Reset();
-                }
+                container.MoveToFront();
             }
         }
     }

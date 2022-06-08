@@ -318,6 +318,8 @@ namespace VoxelWorld
             private static readonly Dictionary<Vector3, int> vertInds = new Dictionary<Vector3, int>();
             public void CreateMesh()
             {
+                Diag.Timer?.StartTimer(Diag.FrameTimer.Task.Mesh);
+
                 DestroyMesh();
                 
                 int w = size / Preferences.subchunkSize;
@@ -503,6 +505,8 @@ namespace VoxelWorld
                 vertInds.Clear();
 
                 Mesh = mesh;
+
+                Diag.Timer?.StopTimer();
             }
 
             private void DestroyMesh()

@@ -31,7 +31,7 @@ namespace VoxelWorld
 
         // Shadows
         public static bool viewShadowMap = false;
-        public static int shadowMapSize = 2048;
+        public static int shadowMapSize = 1024;
         public static float shadowMapScale = 1.15f;
         public static float lightPenetration = 12f;
         public static float lightCookieDistance = 15f; // Should be taken from level editor later
