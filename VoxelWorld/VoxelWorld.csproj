@@ -17,6 +17,7 @@
     </NuGetPackageImportStamp>
     <LangVersion>10</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RWLibs>$(MSBuildThisFileDirectory)\..\..\rwbeplibs\</RWLibs>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -96,41 +97,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Shaders.resx</DependentUpon>
     </Compile>
-    <Compile Include="TerraFX\Attributes.cs" />
-    <Compile Include="TerraFX\BOOL.cs" />
-    <Compile Include="TerraFX\D3D11_BIND_FLAG.cs" />
-    <Compile Include="TerraFX\D3D11_BOX.cs" />
-    <Compile Include="TerraFX\D3D11_CPU_ACCESS_FLAG.cs" />
-    <Compile Include="TerraFX\D3D11_CREATE_DEVICE_FLAG.cs" />
-    <Compile Include="TerraFX\D3D11_FEATURE.cs" />
-    <Compile Include="TerraFX\D3D11_FEATURE_DATA_THREADING.cs" />
-    <Compile Include="TerraFX\D3D11_MAP.cs" />
-    <Compile Include="TerraFX\D3D11_MAPPED_SUBRESOURCE.cs" />
-    <Compile Include="TerraFX\D3D11_MAP_FLAG.cs" />
-    <Compile Include="TerraFX\D3D11_SUBRESOURCE_DATA.cs" />
-    <Compile Include="TerraFX\D3D11_TEXTURE3D_DESC.cs" />
-    <Compile Include="TerraFX\D3D11_USAGE.cs" />
-    <Compile Include="TerraFX\D3D_FEATURE_LEVEL.cs" />
-    <Compile Include="TerraFX\DXGI.cs" />
     <Compile Include="TerraFX\DXGI_ADAPTER_DESC.cs" />
-    <Compile Include="TerraFX\DXGI_FORMAT.cs" />
-    <Compile Include="TerraFX\DXGI_MEMORY_SEGMENT_GROUP.cs" />
     <Compile Include="TerraFX\DXGI_QUERY_VIDEO_MEMORY_INFO.cs" />
-    <Compile Include="TerraFX\ID3D11CommandList.cs" />
-    <Compile Include="TerraFX\ID3D11Device.cs" />
-    <Compile Include="TerraFX\ID3D11DeviceChild.cs" />
-    <Compile Include="TerraFX\ID3D11DeviceContext.cs" />
-    <Compile Include="TerraFX\ID3D11Resource.cs" />
-    <Compile Include="TerraFX\ID3D11Texture3D.cs" />
-    <Compile Include="TerraFX\IDXGIAdapter.cs" />
-    <Compile Include="TerraFX\IDXGIAdapter3.cs" />
-    <Compile Include="TerraFX\IDXGIDevice.cs" />
-    <Compile Include="TerraFX\IDXGIObject.cs" />
-    <Compile Include="TerraFX\IUnknown.cs" />
-    <Compile Include="TerraFX\HRESULT.cs" />
     <Compile Include="TerraFX\LUID.cs" />
-    <Compile Include="TerraFX\Unsafe.cs" />
-    <Compile Include="TerraFX\Windows.cs" />
     <Compile Include="TextureManager.cs" />
     <Compile Include="VoxelMap.cs" />
     <Compile Include="VoxelMapView.cs" />
@@ -175,8 +144,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"$(ILMergeConsolePath)" /targetplatform:v2 /lib:"%25RWLibs%25" /ndebug /out:SeamlessLevels.dll $(TargetFileName) Ionic.Zlib.dll
-if defined RWMods (copy /Y "SeamlessLevels.dll" "%25RWMods%25")</PostBuildEvent>
+    <PostBuildEvent>"$(ILMergeConsolePath)" /targetplatform:v2 "/lib:C:\Users\Pieter-Jan Briers\Projects\RW Other Mods\rwbeplibs" /ndebug /out:SeamlessLevels.dll VoxelWorld.dll Ionic.Zlib.dll
+      if defined RWMods (copy /Y "SeamlessLevels.dll" "%25RWMods%25")</PostBuildEvent>
   </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
