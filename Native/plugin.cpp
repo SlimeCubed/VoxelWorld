@@ -91,7 +91,7 @@ static void InitUploadBuffers()
 {
 	LogThreaded(string_format(L"Initializing %d upload buffers", preferences.UploadPoolSize));
 
-	staging_pool = new ID3D11Texture3D*[preferences.UploadPoolSize];
+	staging_pool = new ID3D11Texture3D*[preferences.UploadPoolSize]();
 
 	for (i32 i = 0; i < preferences.UploadPoolSize; i++)
 	{

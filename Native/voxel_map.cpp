@@ -29,8 +29,8 @@ EXPORT_API void VoxelMapAllocChunk(VoxelMapData* ptr, i32 chunk, i32 length)
 
 EXPORT_API void VoxelMapInit(VoxelMapData* ptr)
 {
-	ptr->LZ4Chunks = new u8*[ptr->CountLZ4Chunks];
-	ptr->LZ4ChunkLengths = new i32[ptr->CountLZ4Chunks];
+	ptr->LZ4Chunks = new u8*[ptr->CountLZ4Chunks]();
+	ptr->LZ4ChunkLengths = new i32[ptr->CountLZ4Chunks]();
 }
 
 VoxelMap::VoxelMap(const wchar_t* name) : Name(name), Data{}
