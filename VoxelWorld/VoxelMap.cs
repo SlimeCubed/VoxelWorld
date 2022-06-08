@@ -8,13 +8,15 @@ using UnityEngine;
 namespace VoxelWorld
 {
     // Holds voxel data for a room
-    internal class VoxelMap
+    internal unsafe class VoxelMap
     {
-        public byte[][] lz4Chunks;
+        // SyncRoot is used to avoid Data getting freed under our feet while loading and stuff.
+        private readonly object syncRoot = new object();
+        public VoxelWorld.VoxelMapData* Data;
+        
         private bool[] subchunks;
         private byte[] lightCookieData;
         private bool loadingVoxels;
-        private readonly object syncRoot = new object();
 
         private static CachedChunk[] chunkCache;
         private static Dictionary<IntVector3, int> chunkCacheIndices = new Dictionary<IntVector3, int>();
@@ -35,12 +37,28 @@ namespace VoxelWorld
         public void GetVoxels(byte[] buffer, int chunkX, int chunkY, out int width, out int height, out int depth)
         {
             WaitForVoxels();
-            DecompressChunk(lz4Chunks[chunkX + chunkY * XChunks], buffer, xVoxels, yVoxels, chunkX, chunkY, out width, out height, out depth);
+            CheckValid();
+            
+            var chunkIdx = chunkX + chunkY * XChunks;
+            DecompressChunk(
+                Data->LZ4Chunks[chunkIdx], Data->LZ4ChunkLengths[chunkIdx],
+                buffer, 
+                xVoxels, yVoxels,
+                chunkX, chunkY,
+                out width, out height, out depth);
         }
-        public unsafe void GetVoxels(byte* buffer, int chunkX, int chunkY, out int width, out int height, out int depth)
+        public void GetVoxels(byte* buffer, int chunkX, int chunkY, out int width, out int height, out int depth)
         {
             WaitForVoxels();
-            DecompressChunk(lz4Chunks[chunkX + chunkY * XChunks], buffer, xVoxels, yVoxels, chunkX, chunkY, out width, out height, out depth);
+            CheckValid();
+
+            var chunkIdx = chunkX + chunkY * XChunks;
+            DecompressChunk(
+                Data->LZ4Chunks[chunkIdx], Data->LZ4ChunkLengths[chunkIdx], 
+                buffer,
+                xVoxels, yVoxels,
+                chunkX, chunkY,
+                out width, out height, out depth);
         }
         public byte[] GetVoxelsCached(int chunkX, int chunkY, out int width, out int height, out int depth)
         {
@@ -87,27 +105,39 @@ namespace VoxelWorld
             return chunkCache[index].data;
         }
 
-        private static unsafe void DecompressChunk(byte[] lz4Data, byte[] buffer, int xVoxels,
-            int yVoxels, int chunkX, int chunkY, out int width, out int height, out int depth)
+        private static void DecompressChunk(
+            byte* lz4Data, int lz4DataLength, 
+            byte[] buffer,
+            int xVoxels, int yVoxels,
+            int chunkX, int chunkY,
+            out int width, out int height, out int depth)
         {
             fixed (byte* bufPtr = buffer)
             {
-                DecompressChunk(lz4Data, bufPtr, xVoxels, yVoxels, chunkX, chunkY, out width, out height, out depth);
+                DecompressChunk(
+                    lz4Data, lz4DataLength, 
+                    bufPtr,
+                    xVoxels, yVoxels,
+                    chunkX, chunkY,
+                    out width, out height, out depth);
             }
         }
 
-        private static unsafe void DecompressChunk(byte[] lz4Data, byte* buffer, int xVoxels,
-            int yVoxels, int chunkX, int chunkY, out int width, out int height, out int depth)
+        private static void DecompressChunk(
+            byte* lz4Data, int lz4DataLength,
+            byte* buffer,
+            int xVoxels, int yVoxels,
+            int chunkX, int chunkY,
+            out int width, out int height, out int depth)
         {
+            // Note: C++ side has an equal function. Keep it up to date.
+            
             // Bound checks would be redundant
             width = Math.Min(xVoxels - chunkX * Preferences.chunkSize, Preferences.chunkSize);
             height = Math.Min(yVoxels - chunkY * Preferences.chunkSize, Preferences.chunkSize);
             depth = 30;
 
-            fixed (byte* lz4Ptr = lz4Data)
-            {
-                VoxelWorld.LZ4Decompress(lz4Ptr, buffer, lz4Data.Length, width * height * depth);
-            }
+            VoxelWorld.LZ4Decompress(lz4Data, buffer, lz4DataLength, width * height * depth);
         }
 
         public int XVoxels
@@ -145,7 +175,7 @@ namespace VoxelWorld
                 return displayOffset;
             }
         }
-        public bool HasVoxelMap => loadingVoxels || lz4Chunks != null;
+        public bool HasVoxelMap => loadingVoxels || (Data != null && Data->LZ4Chunks != null);
 
         public bool[] Subchunks
         {
@@ -195,19 +225,29 @@ namespace VoxelWorld
             this.room = room;
             string roomName = room.abstractRoom.name;
 
+            Data = VoxelWorld.VoxelMapAllocate(roomName);
+            
             FilePath = VoxelWorld.GetRoomFilePath(roomName, "_Voxels.vx1.gz");
             if (File.Exists(FilePath))
             {
                 loadingVoxels = true;
                 ThreadPool.QueueUserWorkItem(state => {
-                    try
+                    lock (syncRoot)
                     {
-                        LoadVoxels();
-                    }
-                    catch(Exception e)
-                    {
-                        VoxelWorld.LogThreaded(new Exception("Failed to call LoadVoxels!", e));
-                        loadingVoxels = false;
+                        CheckValid();
+                        
+                        try
+                        {
+                            LoadVoxels();
+                        }
+                        catch(Exception e)
+                        {
+                            VoxelWorld.LogThreaded(new Exception("Failed to call LoadVoxels!", e));
+                            loadingVoxels = false;
+                            
+                            if (Data != null)
+                                Data->VoxelsLoaded = 1;
+                        }
                     }
                 }, null);
             }
@@ -219,9 +259,10 @@ namespace VoxelWorld
                 Thread.Sleep(0);
         }
 
-        public void LoadVoxels()
+        private void LoadVoxels()
         {
-            byte[][] outLZ4Chunks = null;
+            CheckValid();
+            
             bool[] outSubchunks = null;
             try
             {
@@ -231,7 +272,7 @@ namespace VoxelWorld
                 int width = xVoxels = br.ReadUInt16();
                 int height = yVoxels = br.ReadUInt16();
                 int depth = zVoxels = br.ReadUInt16();
-
+                
                 int xChunks = (width + Preferences.chunkSize - 1) / Preferences.chunkSize;
                 int yChunks = (height + Preferences.chunkSize - 1) / Preferences.chunkSize;
 
@@ -249,23 +290,39 @@ namespace VoxelWorld
                 int scsDepth = zSubchunks = (depth + scSize - 1) / scSize;
 
                 // Load voxels
-                outLZ4Chunks = new byte[xChunks * yChunks][];
+                var countChunks = xChunks * yChunks;
+                Data->CountLZ4Chunks = countChunks;
+                Data->XVoxels = xVoxels;
+                Data->YVoxels = yVoxels;
+                VoxelWorld.VoxelMapInit(Data);
+                
                 outSubchunks = new bool[scsWidth * scsHeight * scsDepth];
 
                 {
                     byte[] rawChunk = new byte[Preferences.chunkSize * Preferences.chunkSize * 30];
-                    for (int chunkI = 0; chunkI < xChunks * yChunks; chunkI++)
+                    for (int chunkI = 0; chunkI < countChunks; chunkI++)
                     {
                         int chunkX = chunkI % xChunks;
                         int chunkY = chunkI / xChunks;
 
                         // Read LZ4 encoded voxels prefixed with data length
                         int len = br.Read7BitEncodedInt();
-                        outLZ4Chunks[chunkI] = new byte[len];
-                        br.Read(outLZ4Chunks[chunkI], 0, len);
+                        VoxelWorld.VoxelMapAllocChunk(Data, chunkI, len);
+                        var readBuf = new byte[len];
+                        br.Read(readBuf, 0, len);
 
+                        fixed (byte* src = readBuf)
+                        {
+                            VoxelWorld.VoxelMapMemcpy(Data->LZ4Chunks[chunkI], src, (nuint)len);
+                        }
+                        
                         // Decode temporarily to fill subchunks
-                        DecompressChunk(outLZ4Chunks[chunkI], rawChunk, width, height, chunkX, chunkY, out int chunkW, out int chunkH, out int chunkD);
+                        DecompressChunk(
+                            Data->LZ4Chunks[chunkI], Data->LZ4ChunkLengths[chunkI],
+                            rawChunk,
+                            width, height, 
+                            chunkX, chunkY,
+                            out int chunkW, out int chunkH, out int chunkD);
 
                         // Each subchunk is true if any voxels within it are solid
                         int originX = chunkX * Preferences.chunkSize;
@@ -327,7 +384,7 @@ namespace VoxelWorld
             catch (Exception e)
             {
                 VoxelWorld.LogThreaded(new Exception("Failed to get voxel map!", e));
-                lz4Chunks = null;
+                Unload();
                 subchunks = null;
                 xVoxels = 0;
                 yVoxels = 0;
@@ -337,14 +394,13 @@ namespace VoxelWorld
                 zSubchunks = 0;
             }
 
-            lock (syncRoot)
+            if (loadingVoxels)
             {
-                if (loadingVoxels)
-                {
-                    loadingVoxels = false;
-                    lz4Chunks = outLZ4Chunks;
-                    subchunks = outSubchunks;
-                }
+                loadingVoxels = false;
+                subchunks = outSubchunks;
+                
+                if (Data != null)
+                    Data->VoxelsLoaded = 1;
             }
         }
 
@@ -404,8 +460,18 @@ namespace VoxelWorld
         {
             lock (syncRoot)
             {
-                lz4Chunks = null;
+                if (Data == null)
+                    return;
+            
+                VoxelWorld.VoxelMapFree(Data);
+                Data = null;
             }
+        }
+
+        public void CheckValid()
+        {
+            if (Data == null)
+                throw new ObjectDisposedException(nameof(VoxelMap));
         }
 
         private struct CachedChunk

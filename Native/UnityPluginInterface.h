@@ -1,5 +1,9 @@
 #pragma once
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 // Which platform we are on?
 #if _MSC_VER
 #define UNITY_WIN 1
@@ -22,7 +26,7 @@
 #if UNITY_METRO
 #define EXPORT_API __declspec(dllexport) __stdcall
 #elif UNITY_WIN
-#define EXPORT_API __declspec(dllexport)
+#define EXPORT_API extern "C" __declspec(dllexport)
 #else
 #define EXPORT_API
 #endif
@@ -76,11 +80,14 @@ enum GfxDeviceEventType {
 
 // If exported by a plugin, this function will be called when graphics device is created, destroyed,
 // before it's being reset (i.e. resolution changed), after it's being reset, etc.
-void EXPORT_API UnitySetGraphicsDevice(void* device, int deviceType, int eventType);
+EXPORT_API void UnitySetGraphicsDevice(void* device, int deviceType, int eventType);
 
 // If exported by a plugin, this function will be called for GL.IssuePluginEvent script calls.
 // The function will be called on a rendering thread; note that when multithreaded rendering is used,
 // the rendering thread WILL BE DIFFERENT from the thread that all scripts & other game logic happens!
 // You have to ensure any synchronization with other plugin script calls is properly done by you.
-void EXPORT_API UnityRenderEvent(int eventID);
+EXPORT_API void UnityRenderEvent(int eventID);
 
+#if defined (__cplusplus)
+}
+#endif

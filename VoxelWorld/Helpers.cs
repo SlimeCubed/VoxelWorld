@@ -7,12 +7,6 @@ namespace VoxelWorld;
 
 public static class Helpers
 {
-    public static void ThrowIfFailed(HRESULT hresult)
-    {
-        if (Windows.FAILED(hresult))
-            Marshal.ThrowExceptionForHR(hresult);
-    }
-
     public static long Micros(TimeSpan span)
     {
         return span.Ticks / 10;
