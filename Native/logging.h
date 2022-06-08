@@ -3,6 +3,9 @@
 #include <string>
 #include "shared.h"
 
+// Fetch log messages from the native plugin.
+// The returned null-terminated pointer is valid until the next call of LogFetch().
+// If null, no more log messages are currently available.
 EXPORT_API const wchar_t* LogFetch();
 
 // https://stackoverflow.com/a/26221725/4678631

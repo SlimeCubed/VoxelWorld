@@ -4,6 +4,7 @@
 #include <dxgi1_4.h>
 #include "voxel_map.h"
 
+// Render events that the game passes to the render thread through GL.IssuePluginEvent().
 enum PluginEvents
 {
 	evInit = 0,
@@ -11,6 +12,7 @@ enum PluginEvents
 	evShutdown = -1
 };
 
+// Configuration preferences C# provides to us, so they are only set in the C# side and not duplicated.
 struct VoxelWorldNativePreferences
 {
 	i32 UploadPoolSize;
@@ -18,6 +20,7 @@ struct VoxelWorldNativePreferences
 	i32 ChunkDepth;
 };
 
+// Actual variable storing preferences.
 VoxelWorldNativePreferences preferences;
 
 struct DxgiDeviceQuery
