@@ -43,10 +43,8 @@ namespace VoxelWorld
             }
         }
 
-        private void OnApplicationQuit()
+        private void OnDisable()
         {
-#warning Killing the process probably isn't a great solution.
-            System.Diagnostics.Process.GetCurrentProcess().Kill();
             ShutdownRenderThread();
         }
 
