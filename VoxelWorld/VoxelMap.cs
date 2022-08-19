@@ -17,7 +17,7 @@ namespace VoxelWorld
         private bool[] subchunks;
         private byte[] lightCookieData;
         private bool loadingVoxels;
-
+        
         private static CachedChunk[] chunkCache;
         private static Dictionary<IntVector3, int> chunkCacheIndices = new Dictionary<IntVector3, int>();
         private static int cacheAge;
